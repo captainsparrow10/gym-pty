@@ -10,11 +10,15 @@ import {
 	bodyRegionsFor,
 	catalogMusclesFor,
 } from "@/features/catalog/muscle-map";
-import { RoutineList } from "@/features/routines/routine-list";
+import {
+	PublicRoutineList,
+	RoutineList,
+} from "@/features/routines/routine-list";
 
 const searchSchema = z.object({
 	tab: z.enum(["routines", "map"]).optional(),
 	view: z.enum(["anterior", "posterior"]).optional(),
+	routines: z.enum(["mine", "public"]).optional(),
 });
 
 export const Route = createFileRoute("/_app/train")({
@@ -45,7 +49,11 @@ for (const entry of COVERAGE) {
 const HEAT = ["#7c2d12", "#9a3412", "#c2410c", "#ea580c", "#f97316"];
 
 function TrainPage() {
-	const { tab = "routines", view = "anterior" } = Route.useSearch();
+	const {
+		tab = "routines",
+		view = "anterior",
+		routines = "mine",
+	} = Route.useSearch();
 	const navigate = useNavigate();
 	const [hovered, setHovered] = useState<Muscle | null>(null);
 
@@ -97,7 +105,31 @@ function TrainPage() {
 						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
 							Routines
 						</h2>
-						<RoutineList />
+
+						<Tabs
+							value={routines}
+							onValueChange={(value) =>
+								navigate({
+									to: "/train",
+									search: (prev) => ({
+										...prev,
+										routines: value as "mine" | "public",
+									}),
+								})
+							}
+							className="mb-4"
+						>
+							<TabsList className="grid w-full grid-cols-2">
+								<TabsTrigger value="mine" className="min-h-11">
+									Mine
+								</TabsTrigger>
+								<TabsTrigger value="public" className="min-h-11">
+									Public
+								</TabsTrigger>
+							</TabsList>
+						</Tabs>
+
+						{routines === "mine" ? <RoutineList /> : <PublicRoutineList />}
 					</div>
 
 					<div className={tab === "map" ? "mt-0" : "hidden lg:block"}>

@@ -13,6 +13,7 @@
     "check:contrast": "node scripts/check-contrast.ts",
     "build:catalog:ai": "node scripts/build-catalog-ai.ts",
     "smoke:session": "node scripts/smoke-session.ts",
+    "smoke:social": "node scripts/smoke-social.ts",
     "smoke:routines": "node scripts/smoke-routines.ts",
     "smoke:add": "node scripts/smoke-add-to-session.ts",
     "smoke:rankings": "node scripts/smoke-rankings.ts",

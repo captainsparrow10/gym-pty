@@ -1,0 +1,36 @@
+[
+  {
+    "slug": "yoga-warrior-ii",
+    "name": "Warrior II",
+    "exerciseType": "duration",
+    "equipment": "Bodyweight",
+    "primaryMuscle": "Quads",
+    "secondaryMuscles": ["Glutes", "Shoulders", "Core"],
+    "isStretch": true,
+    "mechanic": "isometric",
+    "steps": [
+      "Step your feet wide apart, front foot pointing forward and back foot turned out about ninety degrees.",
+      "Bend the front knee until it sits directly over the ankle, keeping the shin vertical.",
+      "Keep the back leg straight and press through the outer edge of the back foot.",
+      "Extend both arms to shoulder height, reaching in opposite directions, torso upright between them.",
+      "Turn your head to look over the front hand and hold, breathing steadily."
+    ]
+  },
+  {
+    "slug": "yoga-standing-forward-fold",
+    "name": "Standing Forward Fold",
+    "exerciseType": "duration",
+    "equipment": "Bodyweight",
+    "primaryMuscle": "Hamstrings",
+    "secondaryMuscles": ["Lower Back", "Calves"],
+    "isStretch": true,
+    "mechanic": "isometric",
+    "steps": [
+      "Stand with your feet together or hip-width apart, knees soft.",
+      "Hinge forward from the hips, letting your torso hang down rather than rounding from the waist.",
+      "Let your head and neck relax completely, and rest your hands on the floor, your shins, or opposite elbows.",
+      "Straighten the knees only as far as the hamstrings allow without the lower back rounding.",
+      "Hold and breathe, letting the fold deepen on each exhale."
+    ]
+  }
+]

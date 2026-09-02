@@ -13,13 +13,32 @@ export type RoutineExercise = {
 	targetReps: number | null;
 };
 
+export type Visibility = "private" | "public";
+
 export type Routine = {
 	id: string;
 	name: string;
 	notes: string | null;
 	/** 1-5 self-rating. Null means unrated, which is not the same as bad. */
 	rating: number | null;
+	visibility: Visibility;
 	exercises: RoutineExercise[];
+};
+
+/** The owner of a routine seen through `usePublicRoutines`, not one's own. */
+export type RoutineOwner = {
+	displayName: string | null;
+	avatarIcon: string;
+	avatarColor: string;
+};
+
+export type PublicRoutine = Routine & {
+	/**
+	 * Null when the owner has since set `public_profile` to false: the routine
+	 * itself stays readable because its own visibility is a separate switch,
+	 * but row level security no longer returns their profile row.
+	 */
+	owner: RoutineOwner | null;
 };
 
 /** How a routine has actually gone, gathered from the sessions run from it. */
@@ -35,11 +54,21 @@ export function useRoutines() {
 	return useQuery({
 		queryKey: routinesKey,
 		queryFn: async (): Promise<Routine[]> => {
+			const { data: auth } = await supabase.auth.getUser();
+			if (!auth.user) throw new Error("Not signed in.");
+
+			/*
+			 * Row level security alone no longer scopes this to "mine": a public
+			 * routine is selectable by anyone, so without this filter the list
+			 * would mix in every public routine on the site, not just the ones
+			 * this user owns. `usePublicRoutines` is the query for those.
+			 */
 			const { data, error } = await supabase
 				.from("routines")
 				.select(
-					"id, name, notes, rating, routine_exercises(id, exercise_slug, position, target_sets, target_reps)",
+					"id, name, notes, rating, visibility, routine_exercises(id, exercise_slug, position, target_sets, target_reps)",
 				)
+				.eq("user_id", auth.user.id)
 				.order("created_at", { ascending: true });
 
 			if (error) throw error;
@@ -49,6 +78,7 @@ export function useRoutines() {
 				name: routine.name,
 				notes: routine.notes,
 				rating: routine.rating,
+				visibility: routine.visibility as Visibility,
 				exercises: (routine.routine_exercises ?? [])
 					.map((exercise) => ({
 						id: exercise.id,
@@ -59,6 +89,79 @@ export function useRoutines() {
 					}))
 					.sort((a, b) => a.position - b.position),
 			}));
+		},
+	});
+}
+
+export const publicRoutinesKey = ["routines", "public"] as const;
+
+/**
+ * Other people's public routines, for browsing.
+ *
+ * `profiles` has no foreign key to `routines` — both merely reference
+ * `auth.users`, so PostgREST cannot embed one in the other the way
+ * `routine_exercises` embeds under `routines`. Fetching the owning profiles
+ * separately and joining them in memory avoids adding a schema relationship
+ * whose only purpose would be a client-side convenience.
+ */
+export function usePublicRoutines() {
+	return useQuery({
+		queryKey: publicRoutinesKey,
+		queryFn: async (): Promise<PublicRoutine[]> => {
+			const { data: auth } = await supabase.auth.getUser();
+
+			const { data, error } = await supabase
+				.from("routines")
+				.select(
+					"id, name, notes, rating, visibility, user_id, routine_exercises(id, exercise_slug, position, target_sets, target_reps)",
+				)
+				.eq("visibility", "public")
+				.order("created_at", { ascending: false });
+
+			if (error) throw error;
+
+			const others = (data ?? []).filter(
+				(routine) => routine.user_id !== auth.user?.id,
+			);
+
+			const ownerIds = [...new Set(others.map((routine) => routine.user_id))];
+			const { data: owners } =
+				ownerIds.length > 0
+					? await supabase
+							.from("profiles")
+							.select("id, display_name, avatar_icon, avatar_color")
+							.in("id", ownerIds)
+					: { data: [] };
+			const ownerById = new Map(
+				(owners ?? []).map((owner) => [owner.id, owner]),
+			);
+
+			return others.map((routine) => {
+				const owner = ownerById.get(routine.user_id);
+				return {
+					id: routine.id,
+					name: routine.name,
+					notes: routine.notes,
+					rating: routine.rating,
+					visibility: routine.visibility as Visibility,
+					exercises: (routine.routine_exercises ?? [])
+						.map((exercise) => ({
+							id: exercise.id,
+							slug: exercise.exercise_slug,
+							position: exercise.position,
+							targetSets: exercise.target_sets,
+							targetReps: exercise.target_reps,
+						}))
+						.sort((a, b) => a.position - b.position),
+					owner: owner
+						? {
+								displayName: owner.display_name,
+								avatarIcon: owner.avatar_icon,
+								avatarColor: owner.avatar_color,
+							}
+						: null,
+				};
+			});
 		},
 	});
 }
@@ -169,6 +272,27 @@ export function useRateRoutine() {
 			const { error } = await supabase
 				.from("routines")
 				.update({ rating })
+				.eq("id", id);
+			if (error) throw error;
+		},
+		onSuccess: refresh,
+	});
+}
+
+export function useSetRoutineVisibility() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: async ({
+			id,
+			visibility,
+		}: {
+			id: string;
+			visibility: Visibility;
+		}) => {
+			const { error } = await supabase
+				.from("routines")
+				.update({ visibility })
 				.eq("id", id);
 			if (error) throw error;
 		},

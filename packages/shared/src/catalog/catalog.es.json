@@ -5909,6 +5909,49 @@
     "Libera las rodillas y estira las piernas."
    ],
    "stepsFrom": "generated"
+  },
+  {
+   "slug": "yoga-warrior-ii",
+   "name": "Guerrero II",
+   "exerciseType": "duration",
+   "equipment": "Bodyweight",
+   "primaryMuscle": "Quads",
+   "secondaryMuscles": [
+    "Glutes",
+    "Shoulders",
+    "Core"
+   ],
+   "isStretch": true,
+   "mechanic": "isometric",
+   "steps": [
+    "Separa tus pies ampliamente, con el pie delantero apuntando hacia adelante y el pie trasero girado unos noventa grados.",
+    "Dobla la rodilla delantera hasta que quede directamente sobre el tobillo, manteniendo la espinilla vertical.",
+    "Mantén la pierna trasera recta y presiona a través del borde exterior del pie trasero.",
+    "Extiende ambos brazos a la altura de los hombros, estirándolos en direcciones opuestas, con el torso erguido entre ellos.",
+    "Gira tu cabeza para mirar por encima de la mano delantera y mantén la postura, respirando de manera constante."
+   ],
+   "stepsFrom": "generated"
+  },
+  {
+   "slug": "yoga-standing-forward-fold",
+   "name": "Flexión hacia adelante de pie",
+   "exerciseType": "duration",
+   "equipment": "Bodyweight",
+   "primaryMuscle": "Hamstrings",
+   "secondaryMuscles": [
+    "Lower Back",
+    "Calves"
+   ],
+   "isStretch": true,
+   "mechanic": "isometric",
+   "steps": [
+    "Ponte de pie con los pies juntos o separados al ancho de las caderas, con las rodillas suaves.",
+    "Inclínate hacia adelante desde las caderas, dejando que tu torso cuelgue en lugar de redondear la cintura.",
+    "Relaja completamente tu cabeza y cuello, y apoya tus manos en el suelo, en tus espinillas o en los codos opuestos.",
+    "Estira las rodillas solo hasta donde los isquiotibiales lo permitan sin que la espalda baja se redondee.",
+    "Mantén la postura y respira, permitiendo que la flexión se profundice con cada exhalación."
+   ],
+   "stepsFrom": "generated"
   }
  ]
 }

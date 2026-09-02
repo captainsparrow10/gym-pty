@@ -233,9 +233,17 @@ function findExercises(args: {
 }
 
 async function listRoutines(supabase: Client) {
+	const { data: auth } = await supabase.auth.getUser();
+
+	/*
+	 * A public routine is now selectable by anyone, so without this filter the
+	 * coach would mix other people's routines into what it tells this user
+	 * about "your routines".
+	 */
 	const { data, error } = await supabase
 		.from("routines")
-		.select("name, routine_exercises(exercise_slug, position)");
+		.select("name, routine_exercises(exercise_slug, position)")
+		.eq("user_id", auth.user?.id ?? "");
 
 	if (error) throw error;
 

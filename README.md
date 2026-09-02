@@ -58,6 +58,15 @@ committed. It sparse-checks out two upstream repositories, extracts the SVG path
 data for 302 exercises into `apps/web/public/art/`, and merges the metadata with
 step-by-step instructions.
 
+The upstream catalogue is strength and calisthenics only. Exercises outside that
+— yoga, pilates — go in `scripts/data/extra-exercises.json`, which the merge
+stage appends, and their artwork is imported separately with
+`pnpm import:drawing` (see [docs/generating-art.md](./docs/generating-art.md)).
+
+Note the ordering: `build:catalog merge` rewrites the catalogue from scratch and
+drops the generated instructions, so `build:catalog:ai steps` has to follow it.
+That second command reads from cache and costs no quota.
+
 The artwork is served from `public/` rather than bundled: 302 exercises come to
 24.6 MB, and no one should download all of it to look at one squat.
 

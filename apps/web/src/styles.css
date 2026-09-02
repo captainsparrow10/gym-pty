@@ -51,6 +51,20 @@
 	--border: #e0ddd9;
 	--input: #8f8a83;
 	--ring: #c2410c;
+
+	/*
+	 * Avatar identity colours. A profile picks one of these, not an arbitrary
+	 * hex value — the fixed set is what makes "avatar" mean "circle + icon"
+	 * rather than an upload, and the six are tuned to the same saturation and
+	 * lightness as --primary/--success/--destructive above so a white icon
+	 * reads clearly on any of them in both themes.
+	 */
+	--avatar-red: #dc2626;
+	--avatar-orange: #c2410c;
+	--avatar-yellow: #a16207;
+	--avatar-green: #15803d;
+	--avatar-blue: #1d4ed8;
+	--avatar-purple: #7e22ce;
 }
 
 .dark {
@@ -83,6 +97,13 @@
 	--border: #2a2622;
 	--input: #6b645a;
 	--ring: #f97316;
+
+	--avatar-red: #ef4444;
+	--avatar-orange: #f97316;
+	--avatar-yellow: #ca8a04;
+	--avatar-green: #22c55e;
+	--avatar-blue: #3b82f6;
+	--avatar-purple: #a855f7;
 }
 
 @theme inline {
@@ -107,6 +128,13 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+
+	--color-avatar-red: var(--avatar-red);
+	--color-avatar-orange: var(--avatar-orange);
+	--color-avatar-yellow: var(--avatar-yellow);
+	--color-avatar-green: var(--avatar-green);
+	--color-avatar-blue: var(--avatar-blue);
+	--color-avatar-purple: var(--avatar-purple);
 
 	--font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
 	--font-display: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;

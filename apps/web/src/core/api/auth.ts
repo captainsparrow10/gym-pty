@@ -92,6 +92,15 @@ export function useSignOut() {
 	});
 }
 
+export function useUpdatePassword() {
+	return useMutation({
+		mutationFn: async (password: string) => {
+			const { error } = await supabase.auth.updateUser({ password });
+			if (error) throw error;
+		},
+	});
+}
+
 /**
  * Supabase returns English error strings. These are the ones a single user
  * signing in to their own app will actually hit.
@@ -103,6 +112,8 @@ export function authErrorMessage(error: unknown): string {
 		return "Wrong email or password.";
 	if (/user already registered/i.test(message))
 		return "An account with that email already exists.";
+	if (/different from the old password/i.test(message))
+		return "New password must be different from your current one.";
 	if (/password should be at least/i.test(message))
 		return "Password needs at least 6 characters.";
 	if (
@@ -111,6 +122,8 @@ export function authErrorMessage(error: unknown): string {
 	)
 		return "That email does not look valid.";
 	if (/email not confirmed/i.test(message)) return "Email not confirmed yet.";
+	if (/auth session missing|not authenticated/i.test(message))
+		return "Your session expired. Sign in again.";
 	if (/rate limit|too many/i.test(message))
 		return "Too many attempts. Wait a moment.";
 

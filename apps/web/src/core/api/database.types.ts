@@ -115,25 +115,34 @@ export type Database = {
 			};
 			profiles: {
 				Row: {
+					avatar_color: string;
+					avatar_icon: string;
 					created_at: string;
 					display_name: string | null;
 					id: string;
+					public_profile: boolean;
 					rest_seconds: number;
 					unit: string;
 					updated_at: string;
 				};
 				Insert: {
+					avatar_color?: string;
+					avatar_icon?: string;
 					created_at?: string;
 					display_name?: string | null;
 					id: string;
+					public_profile?: boolean;
 					rest_seconds?: number;
 					unit?: string;
 					updated_at?: string;
 				};
 				Update: {
+					avatar_color?: string;
+					avatar_icon?: string;
 					created_at?: string;
 					display_name?: string | null;
 					id?: string;
+					public_profile?: boolean;
 					rest_seconds?: number;
 					unit?: string;
 					updated_at?: string;
@@ -184,6 +193,7 @@ export type Database = {
 					rating: number | null;
 					updated_at: string;
 					user_id: string;
+					visibility: string;
 				};
 				Insert: {
 					created_at?: string;
@@ -193,6 +203,7 @@ export type Database = {
 					rating?: number | null;
 					updated_at?: string;
 					user_id: string;
+					visibility?: string;
 				};
 				Update: {
 					created_at?: string;
@@ -202,6 +213,7 @@ export type Database = {
 					rating?: number | null;
 					updated_at?: string;
 					user_id?: string;
+					visibility?: string;
 				};
 				Relationships: [];
 			};
@@ -295,6 +307,18 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			leaderboard: {
+				Args: { p_days?: number };
+				Returns: {
+					avatar_color: string;
+					avatar_icon: string;
+					display_name: string;
+					sessions: number;
+					sets: number;
+					user_id: string;
+					volume_kg: number;
+				}[];
+			};
 			reorder_logged_exercises: {
 				Args: { p_ids: string[] };
 				Returns: undefined;

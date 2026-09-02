@@ -5,7 +5,7 @@ import {
 	notFound,
 	useNavigate,
 } from "@tanstack/react-router";
-import { ArrowLeft, Info, Plus } from "lucide-react";
+import { ArrowLeft, ChevronRight, Info, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AppScroll } from "@/core/ui/app-frame";
@@ -31,7 +31,15 @@ export const Route = createFileRoute("/_app/catalog_/$slug")({
 	),
 });
 
-/** Spanish labels for the logging types, which drive the session inputs. */
+/** Mechanic, spelled out. Anything not compound used to render as "Isolation",
+ * which made an isometric hold look like a single-joint accessory lift. */
+const MECHANIC_LABEL: Record<string, string> = {
+	compound: "Compound",
+	isolation: "Isolation",
+	isometric: "Isometric",
+};
+
+/** Labels for the logging types, which drive the session inputs. */
 const TYPE_LABEL: Record<string, string> = {
 	weight_reps: "Weight & reps",
 	bodyweight_reps: "Bodyweight",
@@ -89,24 +97,51 @@ function ExerciseDetail() {
 					className="aspect-square w-full"
 				/>
 
-				<div className="flex flex-wrap gap-2">
-					<Tag>{exercise.primaryMuscle}</Tag>
-					<Tag>{exercise.equipment}</Tag>
-					{exercise.mechanic && (
-						<Tag>
-							{exercise.mechanic === "compound" ? "Compound" : "Isolation"}
-						</Tag>
-					)}
-					<Tag>
+				{/*
+				 * Each tag says what kind of fact it is. "Quads · Bodyweight ·
+				 * Isometric · Timed" in a row leaves the reader to work out which
+				 * word is the muscle and which is the equipment, and the answer is
+				 * not always obvious — "Cardio" is equipment here, "Core" is a
+				 * muscle.
+				 *
+				 * The three that correspond to a catalogue filter are links to it.
+				 * Mechanic is not filterable, so it stays plain rather than
+				 * pretending to be clickable.
+				 */}
+				<dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+					<Fact label="Muscle" to={{ muscle: [exercise.primaryMuscle] }}>
+						{exercise.primaryMuscle}
+					</Fact>
+					<Fact label="Equipment" to={{ equipment: [exercise.equipment] }}>
+						{exercise.equipment}
+					</Fact>
+					<Fact label="Logged as" to={{ type: [exercise.exerciseType] }}>
 						{TYPE_LABEL[exercise.exerciseType] ?? exercise.exerciseType}
-					</Tag>
-				</div>
+					</Fact>
+					{exercise.mechanic && (
+						<Fact label="Mechanic">{MECHANIC_LABEL[exercise.mechanic]}</Fact>
+					)}
+				</dl>
 
 				{exercise.secondaryMuscles.length > 0 && (
 					<Section title="Also works">
-						<p className="text-muted-foreground">
-							{exercise.secondaryMuscles.join(" · ")}
-						</p>
+						<ul className="flex flex-wrap gap-2">
+							{exercise.secondaryMuscles.map((muscle) => (
+								<li key={muscle}>
+									<Link
+										to="/catalog"
+										search={{ muscle: [muscle] }}
+										className="flex min-h-9 items-center gap-1 rounded-full border bg-card px-3 text-sm transition-colors hover:border-primary"
+									>
+										{muscle}
+										<ChevronRight
+											className="size-3.5 text-muted-foreground"
+											aria-hidden
+										/>
+									</Link>
+								</li>
+							))}
+						</ul>
 					</Section>
 				)}
 
@@ -170,11 +205,38 @@ function ExerciseDetail() {
 	);
 }
 
-function Tag({ children }: { children: React.ReactNode }) {
+function Fact({
+	label,
+	children,
+	to,
+}: {
+	label: string;
+	children: React.ReactNode;
+	/** Catalogue filter this fact selects, when there is one. */
+	to?: { muscle?: string[]; equipment?: string[]; type?: string[] };
+}) {
+	const body = (
+		<>
+			<dt className="text-xs uppercase tracking-wide text-muted-foreground">
+				{label}
+			</dt>
+			<dd className="truncate font-medium">{children}</dd>
+		</>
+	);
+
+	if (!to) {
+		return <div className="rounded-lg border bg-card px-3 py-2">{body}</div>;
+	}
+
 	return (
-		<span className="rounded-full border bg-card px-3 py-1 text-sm text-muted-foreground">
-			{children}
-		</span>
+		<Link
+			to="/catalog"
+			search={to}
+			className="rounded-lg border bg-card px-3 py-2 transition-colors hover:border-primary"
+			aria-label={`Show all ${label.toLowerCase()}: ${children}`}
+		>
+			{body}
+		</Link>
 	);
 }
 

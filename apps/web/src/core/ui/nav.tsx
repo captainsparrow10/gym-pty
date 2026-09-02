@@ -7,6 +7,7 @@ import {
 	type LucideIcon,
 	PersonStanding,
 	Trophy,
+	User,
 } from "lucide-react";
 
 type Destination = {
@@ -17,9 +18,11 @@ type Destination = {
 
 /**
  * Five destinations is the documented ceiling for a bottom bar; a sixth turns
- * it into a menu. A sidebar has no such limit, so Rankings appears there
- * directly and is reached from the Progress screen on a phone — the two answer
- * neighbouring questions anyway.
+ * it into a menu. A sidebar has no such limit, so Rankings and Profile appear
+ * there directly. On a phone, Rankings is reached from the Progress screen —
+ * the two answer neighbouring questions anyway — and Profile from the avatar
+ * in the header of the Today screen, the way a top-right avatar conventionally
+ * opens account settings.
  *
  * Every item keeps its text label. Icon-only navigation is consistently worse
  * to discover.
@@ -36,6 +39,7 @@ const SIDEBAR: Destination[] = [
 	...TAB_BAR.slice(0, 4),
 	{ to: "/rankings", label: "Rankings", icon: Trophy },
 	...TAB_BAR.slice(4),
+	{ to: "/profile", label: "Profile", icon: User },
 ];
 
 /** `exact` only on the index, so /catalog/squat still lights up Exercises. */

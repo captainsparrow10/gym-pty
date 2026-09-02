@@ -6,6 +6,8 @@ import { ChevronRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/core/api/supabase";
 import { AppHeader, AppScroll } from "@/core/ui/app-frame";
+import { Avatar } from "@/core/ui/avatar";
+import { useProfile } from "@/features/profile/queries";
 import { useActiveSession } from "@/features/session/queries";
 
 export const Route = createFileRoute("/_app/")({
@@ -91,10 +93,27 @@ function formatDate(iso: string) {
 function TodayPage() {
 	const { data: active } = useActiveSession();
 	const { data: recent, isPending } = useRecentSessions();
+	const { data: profile } = useProfile();
 
 	return (
 		<>
-			<AppHeader title="Today" />
+			<AppHeader
+				title="Today"
+				action={
+					// The sidebar links Profile directly from 1024px up; below that
+					// this is the way in, the same place a top-right avatar
+					// conventionally opens account settings.
+					<Link
+						to="/profile"
+						aria-label="Profile"
+						className="rounded-full lg:hidden"
+					>
+						{profile && (
+							<Avatar icon={profile.avatarIcon} color={profile.avatarColor} />
+						)}
+					</Link>
+				}
+			/>
 			<AppScroll className="space-y-6 lg:grid lg:grid-cols-[1fr_2fr] lg:items-start lg:gap-8 lg:space-y-0">
 				<div className="space-y-3">
 					<Button asChild className="h-14 w-full text-base">

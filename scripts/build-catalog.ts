@@ -17,7 +17,7 @@
  * GEMINI_API_KEY and live in build-catalog-ai.ts.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { Catalog, Exercise, ExerciseArt } from "../packages/shared/src/catalog/types.ts";
 import { ART_VIEW_BOX } from "../packages/shared/src/catalog/types.ts";
@@ -30,6 +30,8 @@ const CATALOG_OUT = path.join(ROOT, "packages/shared/src/catalog");
 
 const stages = new Set(process.argv.slice(2));
 const shouldRun = (stage: string) => stages.size === 0 || stages.has(stage);
+
+const log = (line: string) => process.stdout.write(`${line}\n`);
 
 console.log("→ fetch");
 const workoutGuide = fetchSource(SOURCES.workoutGuide);
@@ -99,10 +101,27 @@ if (shouldRun("merge")) {
 		};
 	});
 
+	/*
+	 * Exercises added by hand, merged after the upstream ones.
+	 *
+	 * The upstream catalogue is strength and calisthenics only — it has no yoga
+	 * and no pilates. Anything added here needs its art imported separately with
+	 * `pnpm import:drawing`, since it has no upstream illustration to inherit.
+	 */
+	const extraPath = path.join(ROOT, "scripts/data/extra-exercises.json");
+	const extra: Exercise[] = existsSync(extraPath)
+		? JSON.parse(readFileSync(extraPath, "utf8")).map((entry: Omit<Exercise, "stepsFrom">) => ({
+				...entry,
+				stepsFrom: "generated" as const,
+			}))
+		: [];
+
+	if (extra.length > 0) log(`  plus ${extra.length} added by hand`);
+
 	const catalog: Catalog = {
 		locale: "en",
 		generatedAt: new Date().toISOString().slice(0, 10),
-		exercises,
+		exercises: [...exercises, ...extra],
 	};
 
 	mkdirSync(CATALOG_OUT, { recursive: true });
@@ -111,5 +130,5 @@ if (shouldRun("merge")) {
 	console.log(`  matched by everkinetic id:   ${counts["everkinetic-id"]}`);
 	console.log(`  matched by normalized name:  ${counts["everkinetic-name"]}`);
 	console.log(`  need generated steps:        ${counts.generated}`);
-	console.log(`  wrote catalog.en.json (${exercises.length} exercises)`);
+	console.log(`  wrote catalog.en.json ( exercises)`);
 }

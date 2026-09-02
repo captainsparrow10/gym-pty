@@ -198,7 +198,12 @@ console.log("\n→ cleanup");
 await supabase.from("sessions").delete().eq("id", session.id);
 await supabase.from("routines").delete().eq("id", routine.id);
 
-const { data: leftRoutines } = await supabase.from("routines").select("id");
+// Scoped by user_id: a public routine is selectable by anyone now, so an
+// unscoped select would also return every other public routine on the site.
+const { data: leftRoutines } = await supabase
+	.from("routines")
+	.select("id")
+	.eq("user_id", userId);
 const { data: leftSessions } = await supabase.from("sessions").select("id");
 check("nothing left behind", (leftRoutines ?? []).length === 0 && (leftSessions ?? []).length === 0);
 

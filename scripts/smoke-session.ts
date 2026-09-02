@@ -64,8 +64,14 @@ if (!signUp.session) {
 const userId = signUp.user?.id;
 check("cuenta creada con sesión", Boolean(userId));
 
-// The schema creates a profile row from a trigger on auth.users.
-const { data: profile } = await supabase.from("profiles").select("id, unit, rest_seconds").single();
+// The schema creates a profile row from a trigger on auth.users. Scoped by
+// id: a public profile is selectable by anyone now, so without the filter
+// this would fail with "multiple rows returned" once more than one exists.
+const { data: profile } = await supabase
+	.from("profiles")
+	.select("id, unit, rest_seconds")
+	.eq("id", userId as string)
+	.single();
 check("perfil creado por el trigger", profile?.id === userId, `unit=${profile?.unit}`);
 
 console.log("\n→ sesión");
