@@ -74,7 +74,7 @@ function TrainPage() {
 							search: (prev) => ({ ...prev, tab: value as "routines" | "map" }),
 						})
 					}
-					className="mb-4"
+					className="mb-4 lg:hidden"
 				>
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="routines" className="min-h-11">
@@ -86,10 +86,24 @@ function TrainPage() {
 					</TabsList>
 				</Tabs>
 
-				{tab === "routines" && <RoutineList />}
+				{/*
+				 * Below lg the tabs decide what is visible. From lg both are shown at
+				 * once — the tabs existed only because two panels do not fit at phone
+				 * width, and hiding half a screen behind a tab on a monitor is just
+				 * wasted space.
+				 */}
+				<div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+					<div className={tab === "routines" ? "" : "hidden lg:block"}>
+						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
+							Rutinas
+						</h2>
+						<RoutineList />
+					</div>
 
-				{tab === "map" && (
-					<>
+					<div className={tab === "map" ? "mt-0" : "hidden lg:block"}>
+						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
+							Mapa corporal
+						</h2>
 						<p className="mb-4 text-sm text-muted-foreground">
 							Tocá un músculo para ver sus ejercicios.
 						</p>
@@ -168,8 +182,8 @@ function TrainPage() {
 									</li>
 								))}
 						</ul>
-					</>
-				)}
+					</div>
+				</div>
 			</AppScroll>
 		</>
 	);

@@ -7,7 +7,7 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronRight, Search, X } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,35 @@ const HAYSTACK = new Map(
 
 const ROW_HEIGHT = 88;
 
+/**
+ * Columns at the current width.
+ *
+ * A single 88px row spanning a monitor is mostly empty space, so the list
+ * becomes a grid. TanStack Virtual calls these lanes and keeps virtualising
+ * across them, which matters — 302 rows is past the point where mounting them
+ * all costs a visible scroll stutter.
+ */
+function useLaneCount() {
+	const [lanes, setLanes] = useState(1);
+
+	useEffect(() => {
+		const query = window.matchMedia("(min-width: 1024px)");
+		const wide = window.matchMedia("(min-width: 1536px)");
+
+		const update = () => setLanes(wide.matches ? 3 : query.matches ? 2 : 1);
+		update();
+
+		query.addEventListener("change", update);
+		wide.addEventListener("change", update);
+		return () => {
+			query.removeEventListener("change", update);
+			wide.removeEventListener("change", update);
+		};
+	}, []);
+
+	return lanes;
+}
+
 function CatalogPage() {
 	const { q = "", equipment, muscle } = Route.useSearch();
 	const navigate = Route.useNavigate();
@@ -79,11 +108,14 @@ function CatalogPage() {
 
 	// 302 rows is well past the point where mounting them all costs a visible
 	// scroll stutter on a phone.
+	const lanes = useLaneCount();
+
 	const virtualizer = useVirtualizer({
 		count: results.length,
 		getScrollElement: () => scrollRef.current,
 		estimateSize: () => ROW_HEIGHT,
 		overscan: 6,
+		lanes,
 		// There is no scroll element to measure during SSR, so without a seeded
 		// rect the server renders an empty list and the first paint is blank.
 		// One phone-height viewport is enough to fill the fold.
@@ -99,7 +131,7 @@ function CatalogPage() {
 		<>
 			<AppHeader title="Ejercicios" />
 
-			<div className="space-y-3 border-b px-4 py-3">
+			<div className="space-y-3 border-b px-4 py-3 lg:px-8">
 				<div className="relative">
 					<Search
 						className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -152,7 +184,7 @@ function CatalogPage() {
 
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-y-auto px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-2"
+				className="flex-1 overflow-y-auto px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-2 lg:px-8 lg:pb-10"
 			>
 				{results.length === 0 ? (
 					<p className="py-12 text-center text-muted-foreground">

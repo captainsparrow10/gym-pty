@@ -111,7 +111,7 @@ export function RestTimer({ seconds, onDismiss }: Props) {
 	return (
 		<div
 			className={cn(
-				"absolute inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t bg-card px-4 py-3",
+				"absolute inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t bg-card px-4 py-3 lg:bottom-0 lg:px-8",
 				done && "bg-success/15",
 			)}
 		>

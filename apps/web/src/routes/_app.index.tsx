@@ -95,13 +95,26 @@ function TodayPage() {
 	return (
 		<>
 			<AppHeader title="Hoy" />
-			<AppScroll className="space-y-6">
-				<Button asChild className="h-14 w-full text-base">
-					<Link to="/session">
-						<Play className="size-5" aria-hidden />
-						{active ? "Seguir la sesión" : "Empezar a entrenar"}
+			<AppScroll className="space-y-6 lg:grid lg:grid-cols-[1fr_2fr] lg:items-start lg:gap-8 lg:space-y-0">
+				<div className="space-y-3">
+					<Button asChild className="h-14 w-full text-base">
+						<Link to="/session">
+							<Play className="size-5" aria-hidden />
+							{active ? "Seguir la sesión" : "Empezar a entrenar"}
+						</Link>
+					</Button>
+
+					<Link
+						to="/catalog"
+						className="flex min-h-12 items-center justify-between rounded-xl border bg-card px-4 text-sm transition-colors hover:border-primary"
+					>
+						<span>Explorar los {exercises.length} ejercicios</span>
+						<ChevronRight
+							className="size-4 text-muted-foreground"
+							aria-hidden
+						/>
 					</Link>
-				</Button>
+				</div>
 
 				<section>
 					<h2 className="mb-3 font-display text-lg font-semibold uppercase tracking-wide">
@@ -147,14 +160,6 @@ function TodayPage() {
 						</div>
 					)}
 				</section>
-
-				<Link
-					to="/catalog"
-					className="flex min-h-12 items-center justify-between rounded-xl border bg-card px-4 text-sm transition-colors hover:border-primary"
-				>
-					<span>Explorar los {exercises.length} ejercicios</span>
-					<ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-				</Link>
 			</AppScroll>
 		</>
 	);

@@ -117,20 +117,27 @@ function SessionPage() {
 				}
 			/>
 
-			<AppScroll className="space-y-4 pb-40">
+			<AppScroll className="space-y-4 pb-40 lg:pb-28">
 				{session.exercises.length === 0 && (
 					<p className="py-8 text-center text-muted-foreground">
 						Agregá el primer ejercicio para arrancar.
 					</p>
 				)}
 
-				{session.exercises.map((exercise) => (
-					<ExerciseCard
-						key={exercise.id}
-						exercise={exercise}
-						onLogged={() => setResting(true)}
-					/>
-				))}
+				{/*
+				 * Two columns from lg. A workout is a list of independent cards, so
+				 * they tile without losing any ordering the user relies on — the
+				 * numbered sets live inside each card.
+				 */}
+				<div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+					{session.exercises.map((exercise) => (
+						<ExerciseCard
+							key={exercise.id}
+							exercise={exercise}
+							onLogged={() => setResting(true)}
+						/>
+					))}
+				</div>
 
 				<ExercisePicker
 					onPick={(slug) =>

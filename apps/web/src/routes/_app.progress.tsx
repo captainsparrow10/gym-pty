@@ -106,9 +106,9 @@ function ProgressPage() {
 	return (
 		<>
 			<AppHeader title="Progreso" />
-			<AppScroll className="space-y-6">
+			<AppScroll className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
 				{!hasData && (
-					<div className="rounded-xl border border-dashed p-6 text-center">
+					<div className="rounded-xl border border-dashed p-6 text-center lg:col-span-2">
 						<p className="text-muted-foreground">
 							Los gráficos aparecen cuando termines tu primera sesión.
 						</p>
@@ -121,7 +121,10 @@ function ProgressPage() {
 							title="Volumen por semana"
 							hint="Kilos totales movidos, sin contar calentamiento."
 						>
-							<ChartContainer config={VOLUME_CONFIG} className="h-48 w-full">
+							<ChartContainer
+								config={VOLUME_CONFIG}
+								className="h-48 w-full lg:h-64"
+							>
 								<BarChart data={weekly} margin={{ left: 4, right: 4 }}>
 									<CartesianGrid vertical={false} strokeOpacity={0.2} />
 									<XAxis
@@ -186,7 +189,7 @@ function ProgressPage() {
 
 								<ChartContainer
 									config={STRENGTH_CONFIG}
-									className="h-48 w-full"
+									className="h-48 w-full lg:h-64"
 								>
 									<LineChart data={strength} margin={{ left: 4, right: 8 }}>
 										<CartesianGrid vertical={false} strokeOpacity={0.2} />
@@ -264,13 +267,15 @@ function Panel({
 	title,
 	hint,
 	children,
+	className,
 }: {
 	title: string;
 	hint?: string;
 	children: React.ReactNode;
+	className?: string;
 }) {
 	return (
-		<section>
+		<section className={className}>
 			<h2 className="font-display text-lg font-semibold uppercase tracking-wide">
 				{title}
 			</h2>

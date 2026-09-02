@@ -2,8 +2,8 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { Dumbbell } from "lucide-react";
 import { useEffect } from "react";
 import { useSession } from "@/core/api/auth";
-import { AppFrame } from "@/core/ui/app-frame";
-import { TabBar } from "@/core/ui/tab-bar";
+import { AppFrame, AppMain } from "@/core/ui/app-frame";
+import { Sidebar, TabBar } from "@/core/ui/nav";
 
 /**
  * Layout for the tabbed area of the app.
@@ -48,8 +48,11 @@ function AppLayout() {
 
 	return (
 		<AppFrame>
-			<Outlet />
-			<TabBar />
+			<Sidebar />
+			<AppMain>
+				<Outlet />
+				<TabBar />
+			</AppMain>
 		</AppFrame>
 	);
 }
