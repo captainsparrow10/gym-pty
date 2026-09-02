@@ -332,13 +332,54 @@ export function useAddToSession() {
 	});
 }
 
-/** Rewrites the order of exercises within the active session. */
+/**
+ * Rewrites the order of exercises within the active session.
+ *
+ * Applied optimistically. A drag has already moved the card under the pointer;
+ * waiting for a round trip before the list agrees makes it snap back and then
+ * jump forward, which reads as the drag having failed. The cache is rolled back
+ * if the write does fail.
+ */
 export function useReorderSessionExercises() {
-	const refresh = useRefresh();
+	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (orderedIds: string[]) =>
 			reorderPositions("logged_exercises", orderedIds),
-		onSuccess: refresh,
+
+		onMutate: async (orderedIds) => {
+			// Otherwise an in-flight refetch can land after this and undo it.
+			await queryClient.cancelQueries({ queryKey: activeSessionKey });
+			const previous = queryClient.getQueryData<ActiveSession | null>(
+				activeSessionKey,
+			);
+
+			queryClient.setQueryData<ActiveSession | null>(
+				activeSessionKey,
+				(current) => {
+					if (!current) return current;
+					const byId = new Map(
+						current.exercises.map((exercise) => [exercise.id, exercise]),
+					);
+					return {
+						...current,
+						exercises: orderedIds.flatMap((id, position) => {
+							const exercise = byId.get(id);
+							return exercise ? [{ ...exercise, position }] : [];
+						}),
+					};
+				},
+			);
+
+			return { previous };
+		},
+
+		onError: (_error, _ids, context) => {
+			queryClient.setQueryData(activeSessionKey, context?.previous);
+		},
+
+		// Reconcile with the server once it settles, either way.
+		onSettled: () =>
+			queryClient.invalidateQueries({ queryKey: activeSessionKey }),
 	});
 }

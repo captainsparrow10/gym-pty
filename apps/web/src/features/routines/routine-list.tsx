@@ -3,6 +3,7 @@ import { formatDuration, formatKg } from "@gym/shared/domain";
 import { useNavigate } from "@tanstack/react-router";
 import { Play, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableItem, SortableList } from "@/core/ui/sortable";
@@ -11,11 +12,13 @@ import { useActiveSession } from "@/features/session/queries";
 import { cn } from "@/lib/utils";
 import {
 	type Routine,
+	routineErrorMessage,
 	useAddRoutineExercise,
 	useCreateRoutine,
 	useDeleteRoutine,
 	useRateRoutine,
 	useRemoveRoutineExercise,
+	useRenameRoutine,
 	useReorderRoutineExercises,
 	useRoutineStats,
 	useRoutines,
@@ -34,7 +37,10 @@ export function RoutineList() {
 	const submit = () => {
 		const trimmed = name.trim();
 		if (!trimmed) return;
-		create.mutate(trimmed, { onSuccess: () => setName("") });
+		create.mutate(trimmed, {
+			onSuccess: () => setName(""),
+			onError: (error: unknown) => toast.error(routineErrorMessage(error)),
+		});
 	};
 
 	if (isPending) {
@@ -97,6 +103,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 	const removeExercise = useRemoveRoutineExercise();
 	const reorder = useReorderRoutineExercises();
 	const remove = useDeleteRoutine();
+	const rename = useRenameRoutine();
 	const start = useStartFromRoutine();
 	const [expanded, setExpanded] = useState(false);
 
@@ -200,6 +207,40 @@ function RoutineCard({ routine }: { routine: Routine }) {
 							)}
 						</SortableList>
 					)}
+
+					<div className="border-t p-3">
+						<label
+							htmlFor={`rename-${routine.id}`}
+							className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground"
+						>
+							Name
+						</label>
+						<div className="flex gap-2">
+							<Input
+								id={`rename-${routine.id}`}
+								defaultValue={routine.name}
+								// Committed on blur rather than on every keystroke: a
+								// unique-name check is not something to run per character.
+								onBlur={(event) => {
+									const next = event.target.value.trim();
+									if (!next || next === routine.name) {
+										event.target.value = routine.name;
+										return;
+									}
+									rename.mutate(
+										{ id: routine.id, name: next },
+										{
+											onError: (error: unknown) => {
+												toast.error(routineErrorMessage(error));
+												event.target.value = routine.name;
+											},
+										},
+									);
+								}}
+								className="h-11"
+							/>
+						</div>
+					</div>
 
 					<div className="flex gap-2 border-t p-3">
 						<ExercisePicker

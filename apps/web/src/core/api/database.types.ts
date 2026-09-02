@@ -295,7 +295,14 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
-			[_ in never]: never;
+			reorder_logged_exercises: {
+				Args: { p_ids: string[] };
+				Returns: undefined;
+			};
+			reorder_routine_exercises: {
+				Args: { p_ids: string[] };
+				Returns: undefined;
+			};
 		};
 		Enums: {
 			[_ in never]: never;

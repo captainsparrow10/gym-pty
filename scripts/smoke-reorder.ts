@@ -40,16 +40,10 @@ const read = async () => {
   return data ?? [];
 };
 
-// La misma función que usa la app
+// The same call the app makes: one RPC, one transaction.
 async function reorderPositions(ids: string[]) {
-  for (const [i, id] of ids.entries()) {
-    const { error } = await sb.from("logged_exercises").update({ position: -(i + 1) }).eq("id", id);
-    if (error) throw error;
-  }
-  for (const [i, id] of ids.entries()) {
-    const { error } = await sb.from("logged_exercises").update({ position: i }).eq("id", id);
-    if (error) throw error;
-  }
+  const { error } = await sb.rpc("reorder_logged_exercises", { p_ids: ids });
+  if (error) throw error;
 }
 const move = <T,>(a: T[], from: number, to: number) => {
   const n = a.slice(); const [m] = n.splice(from, 1); n.splice(to, 0, m); return n;
@@ -84,7 +78,37 @@ check("order is exactly reversed",
 console.log("\n→ a direct write still collides");
 const { error: collision } = await sb.from("logged_exercises")
   .update({ position: reversed[1].position }).eq("id", reversed[0].id);
-check("the unique index is really there", collision !== null, collision?.code ?? "");
+check("the constraint is really there", collision !== null, collision?.code ?? "");
+
+console.log("\n→ no observable intermediate state");
+// The bug this replaced: the client parked rows on negative positions across
+// six round trips, so anything reading mid-flight saw a scrambled list. Racing
+// reads against the reorder proves there is no longer a window to catch.
+{
+  const before = await read();
+  const target = before.slice().reverse().map(r => r.id);
+
+  const snapshots: string[][] = [];
+  const readerDone = (async () => {
+    for (let i = 0; i < 40; i++) {
+      snapshots.push((await read()).map(r => r.exercise_slug));
+    }
+  })();
+
+  await reorderPositions(target);
+  await readerDone;
+
+  const startOrder = before.map(r => r.exercise_slug).join();
+  const endOrder = before.slice().reverse().map(r => r.exercise_slug).join();
+  const bad = snapshots.filter(s => {
+    const joined = s.join();
+    return joined !== startOrder && joined !== endOrder;
+  });
+
+  check(`${snapshots.length} concurrent reads saw only a valid order`, bad.length === 0,
+    bad.length ? `first bad: ${bad[0].join(" ")}` : "");
+  check("every read returned all 5 rows", snapshots.every(s => s.length === 5));
+}
 
 await sb.from("sessions").delete().eq("id", session!.id);
 console.log(`\n${process.exitCode ? "failures above" : "all green"}`);

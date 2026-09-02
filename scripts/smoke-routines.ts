@@ -39,21 +39,21 @@ if (signUpError) throw signUpError;
 if (!signUp.session) throw new Error("sign-up returned no session; autoconfirm is off again");
 const userId = signUp.user?.id as string;
 
-console.log("→ rutina");
+console.log("→ routine");
 const { data: routine, error: routineError } = await supabase
 	.from("routines")
 	.insert({ user_id: userId, name: "Empuje" })
 	.select("id")
 	.single();
 if (routineError) throw routineError;
-check("rutina creada", Boolean(routine.id));
+check("routine created", Boolean(routine.id));
 
 const slugs = ["bench-press", "overhead-press", "tricep-pushdown"];
 const { error: addError } = await supabase.from("routine_exercises").insert(
 	slugs.map((slug, position) => ({ routine_id: routine.id, exercise_slug: slug, position })),
 );
 if (addError) throw addError;
-check("3 ejercicios agregados", true);
+check("3 exercises added", true);
 
 const readOrder = async (): Promise<string[]> => {
 	const { data } = await supabase
@@ -64,9 +64,9 @@ const readOrder = async (): Promise<string[]> => {
 	return (data ?? []).map((row) => row.exercise_slug);
 };
 
-check("orden inicial", JSON.stringify(await readOrder()) === JSON.stringify(slugs));
+check("initial order", JSON.stringify(await readOrder()) === JSON.stringify(slugs));
 
-console.log("\n→ reordenar");
+console.log("\n→ reorder");
 // A direct swap has to fail, which is the reason the app parks rows first.
 const { data: rows } = await supabase
 	.from("routine_exercises")
@@ -79,7 +79,7 @@ const { error: naiveError } = await supabase
 	.from("routine_exercises")
 	.update({ position: second.position })
 	.eq("id", first.id);
-check("un swap directo choca con el índice único", naiveError !== null, naiveError?.code ?? "");
+check("a direct swap collides with the unique constraint", naiveError !== null, naiveError?.code ?? "");
 
 // The parked swap the app actually performs.
 const park = async (id: string, position: number) => {
@@ -93,12 +93,12 @@ await park(second.id, first.position);
 
 const swapped = await readOrder();
 check(
-	"el swap con parking funciona",
+	"the parked swap works",
 	JSON.stringify(swapped) === JSON.stringify([slugs[1], slugs[0], slugs[2]]),
 	swapped.join(" → "),
 );
 
-console.log("\n→ empezar desde la rutina");
+console.log("\n→ start from routine");
 const { data: session, error: sessionError } = await supabase
 	.from("sessions")
 	.insert({ user_id: userId })
@@ -109,7 +109,7 @@ if (sessionError) throw sessionError;
 const { error: preloadError } = await supabase.from("logged_exercises").insert(
 	swapped.map((slug, position) => ({ session_id: session.id, exercise_slug: slug, position })),
 );
-check("sesión precargada con la rutina", !preloadError);
+check("session preloaded from the routine", !preloadError);
 
 const { data: loaded } = await supabase
 	.from("logged_exercises")
@@ -117,11 +117,11 @@ const { data: loaded } = await supabase
 	.eq("session_id", session.id)
 	.order("position");
 check(
-	"conserva el orden de la rutina",
+	"keeps the routine order",
 	JSON.stringify((loaded ?? []).map((row) => row.exercise_slug)) === JSON.stringify(swapped),
 );
 
-console.log("\n→ progreso");
+console.log("\n→ progress");
 // Two training days on the same lift, so the strength series has a slope.
 const { data: firstExercise, error: lookupError } = await supabase
 	.from("logged_exercises")
@@ -129,7 +129,7 @@ const { data: firstExercise, error: lookupError } = await supabase
 	.eq("session_id", session.id)
 	.eq("exercise_slug", "bench-press")
 	.single();
-check("se ubica el ejercicio", Boolean(firstExercise?.id), lookupError?.message ?? "");
+check("exercise located", Boolean(firstExercise?.id), lookupError?.message ?? "");
 
 /*
  * Every column is spelled out on both rows, including `warmup: false`.
@@ -144,7 +144,7 @@ const { error: setsError } = await supabase.from("sets").insert([
 	// A warm-up, which every chart must exclude.
 	{ logged_exercise_id: firstExercise?.id, position: 1, reps: 12, weight_kg: 20, warmup: true },
 ]);
-check("series insertadas", !setsError, setsError?.message ?? "");
+check("sets inserted", !setsError, setsError?.message ?? "");
 
 await supabase
 	.from("sessions")
@@ -161,19 +161,45 @@ const allSets = (history ?? []).flatMap((s) =>
 );
 
 const working = allSets.filter((set) => !set.warmup);
-check("el historial trae las 2 series", allSets.length === 2);
-check("el calentamiento se excluye", working.length === 1);
+check("history returns both sets", allSets.length === 2);
+check("the warm-up is excluded", working.length === 1);
 
 const volume = working.reduce((total, set) => total + set.reps * Number(set.weight_kg), 0);
 // 5 x 80, and the 12 x 20 warm-up must not count.
-check("volumen sin calentamiento", volume === 400, `${formatKg(volume)} kg`);
+check("volume without the warm-up", volume === 400, `${formatKg(volume)} kg`);
 
-console.log("\n→ limpieza");
+console.log("\n→ naming");
+const { data: renamed, error: renameError } = await supabase
+	.from("routines")
+	.update({ name: "Push day" })
+	.eq("id", routine!.id)
+	.select("name")
+	.single();
+check("routine can be renamed", renamed?.name === "Push day", renameError?.message ?? "");
+
+const { error: duplicateName } = await supabase
+	.from("routines")
+	.insert({ user_id: userId, name: "Push day" });
+check("a duplicate name is rejected", duplicateName?.code === "23505", duplicateName?.code ?? "");
+
+// Case and surrounding whitespace do not make a different routine.
+const { error: casedDuplicate } = await supabase
+	.from("routines")
+	.insert({ user_id: userId, name: "  push DAY " });
+check("case and spacing do not dodge it", casedDuplicate?.code === "23505", casedDuplicate?.code ?? "");
+
+const { error: differentName } = await supabase
+	.from("routines")
+	.insert({ user_id: userId, name: "Pull day" });
+check("a different name is allowed", !differentName);
+await supabase.from("routines").delete().eq("name", "Pull day");
+
+console.log("\n→ cleanup");
 await supabase.from("sessions").delete().eq("id", session.id);
 await supabase.from("routines").delete().eq("id", routine.id);
 
 const { data: leftRoutines } = await supabase.from("routines").select("id");
 const { data: leftSessions } = await supabase.from("sessions").select("id");
-check("no quedó nada", (leftRoutines ?? []).length === 0 && (leftSessions ?? []).length === 0);
+check("nothing left behind", (leftRoutines ?? []).length === 0 && (leftSessions ?? []).length === 0);
 
-console.log(`\n${process.exitCode ? "hubo fallos" : "todo en verde"}`);
+console.log(`\n${process.exitCode ? "failures above" : "all green"}`);

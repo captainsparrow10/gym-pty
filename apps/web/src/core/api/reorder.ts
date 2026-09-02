@@ -1,41 +1,30 @@
 import { supabase } from "./supabase";
 
 /**
- * Rewrites the `position` column of an ordered list.
+ * Rewrites the order of an exercise list, atomically.
  *
- * Both `routine_exercises` and `logged_exercises` carry a unique constraint on
- * `(parent_id, position)`, so writing the new order directly collides the
- * moment two rows want a slot the other still holds. Every row is parked on a
- * negative position first — a range no real row uses — and then written to its
- * final value.
+ * One round trip into a Postgres function, not a loop of updates from here.
+ * The previous version parked every row on a negative position and then wrote
+ * the final ones — six or more sequential requests for a single drag, during
+ * which the rows really were at negative positions. Anything that refetched in
+ * that window read a scrambled list, and an interrupted run left them parked
+ * permanently.
  *
- * The alternative, a Postgres function doing it in one transaction, would be
- * atomic. This is not: an interrupted reorder leaves rows parked on negatives
- * and the list reads in a scrambled order until it is reordered again. For a
- * handful of exercises in a personal app that is an acceptable trade against
- * keeping the ordering logic in one place the app can read.
+ * The unique constraints on `(parent, position)` are deferrable, so the
+ * function renumbers everything in one statement with uniqueness checked at
+ * commit. No intermediate state is ever visible.
  */
 export async function reorderPositions(
 	table: "routine_exercises" | "logged_exercises",
 	orderedIds: string[],
 ): Promise<void> {
-	// Park everything out of the way, keeping relative order so a failure here
-	// is at least recoverable by eye.
-	for (const [index, id] of orderedIds.entries()) {
-		const { error } = await supabase
-			.from(table)
-			.update({ position: -(index + 1) })
-			.eq("id", id);
-		if (error) throw error;
-	}
+	const fn =
+		table === "logged_exercises"
+			? "reorder_logged_exercises"
+			: "reorder_routine_exercises";
 
-	for (const [index, id] of orderedIds.entries()) {
-		const { error } = await supabase
-			.from(table)
-			.update({ position: index })
-			.eq("id", id);
-		if (error) throw error;
-	}
+	const { error } = await supabase.rpc(fn, { p_ids: orderedIds });
+	if (error) throw error;
 }
 
 /** Moves one item within an array, returning a new one. */

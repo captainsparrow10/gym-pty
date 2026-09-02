@@ -68,6 +68,13 @@ function useRefresh() {
 	return () => queryClient.invalidateQueries({ queryKey: routinesKey });
 }
 
+/** Postgres codes surface as English; these are the ones a routine can hit. */
+export function routineErrorMessage(error: unknown): string {
+	const code = (error as { code?: string })?.code;
+	if (code === "23505") return "You already have a routine with that name.";
+	return (error as Error)?.message ?? "Something went wrong.";
+}
+
 export function useCreateRoutine() {
 	const refresh = useRefresh();
 
@@ -176,7 +183,7 @@ export function useRenameRoutine() {
 		mutationFn: async ({ id, name }: { id: string; name: string }) => {
 			const { error } = await supabase
 				.from("routines")
-				.update({ name })
+				.update({ name: name.trim() })
 				.eq("id", id);
 			if (error) throw error;
 		},
@@ -288,13 +295,43 @@ export function useStartFromRoutine() {
 	});
 }
 
-/** Rewrites the order of exercises within a routine. */
+/** Rewrites the order of exercises within a routine, optimistically. */
 export function useReorderRoutineExercises() {
-	const refresh = useRefresh();
+	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (orderedIds: string[]) =>
 			reorderPositions("routine_exercises", orderedIds),
-		onSuccess: refresh,
+
+		onMutate: async (orderedIds) => {
+			await queryClient.cancelQueries({ queryKey: routinesKey });
+			const previous = queryClient.getQueryData<Routine[]>(routinesKey);
+
+			queryClient.setQueryData<Routine[]>(routinesKey, (current) =>
+				current?.map((routine) => {
+					const byId = new Map(
+						routine.exercises.map((exercise) => [exercise.id, exercise]),
+					);
+					// Only the routine that owns these ids is affected.
+					if (!orderedIds.every((id) => byId.has(id))) return routine;
+
+					return {
+						...routine,
+						exercises: orderedIds.flatMap((id, position) => {
+							const exercise = byId.get(id);
+							return exercise ? [{ ...exercise, position }] : [];
+						}),
+					};
+				}),
+			);
+
+			return { previous };
+		},
+
+		onError: (_error, _ids, context) => {
+			queryClient.setQueryData(routinesKey, context?.previous);
+		},
+
+		onSettled: () => queryClient.invalidateQueries({ queryKey: routinesKey }),
 	});
 }
