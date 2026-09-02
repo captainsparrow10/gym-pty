@@ -99,17 +99,37 @@ check(
 );
 
 console.log("\n→ start from routine");
+/*
+ * `routine_id` is what makes a session know where it came from. Without it the
+ * live session is an anonymous list of exercises: it cannot name the routine
+ * it is running, cannot link back to it for editing, and the routine's own
+ * "last performed / average volume" history has nothing to count.
+ */
 const { data: session, error: sessionError } = await supabase
 	.from("sessions")
-	.insert({ user_id: userId })
-	.select("id")
+	.insert({ user_id: userId, routine_id: routine.id })
+	.select("id, routine_id")
 	.single();
 if (sessionError) throw sessionError;
+check("the session records which routine it came from", session.routine_id === routine.id);
 
 const { error: preloadError } = await supabase.from("logged_exercises").insert(
 	swapped.map((slug, position) => ({ session_id: session.id, exercise_slug: slug, position })),
 );
 check("session preloaded from the routine", !preloadError);
+
+{
+	// The shape the app reads: the active session with its routine, in one
+	// query. If `routine_id` stopped coming back the session screen would
+	// silently lose its "Edit routine" link rather than break.
+	const { data: active } = await supabase
+		.from("sessions")
+		.select("id, started_at, routine_id, logged_exercises(exercise_slug)")
+		.is("finished_at", null)
+		.maybeSingle();
+	check("the app's own query returns it", active?.routine_id === routine.id, String(active?.routine_id));
+	check("with the exercises attached", (active?.logged_exercises ?? []).length === 3);
+}
 
 const { data: loaded } = await supabase
 	.from("logged_exercises")
