@@ -12,14 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppCatalogRouteImport } from './routes/_app.catalog'
 import { Route as AppCoachRouteImport } from './routes/_app.coach'
+import { Route as AppExercisesRouteImport } from './routes/_app.exercises'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
-import { Route as AppProgressRouteImport } from './routes/_app.progress'
 import { Route as AppRankingsRouteImport } from './routes/_app.rankings'
 import { Route as AppSessionRouteImport } from './routes/_app.session'
 import { Route as AppTrainRouteImport } from './routes/_app.train'
-import { Route as AppCatalogSlugRouteImport } from './routes/_app.catalog_.$slug'
+import { Route as AppExercisesSlugRouteImport } from './routes/_app.exercises_.$slug'
+import { Route as AppRoutinesIdRouteImport } from './routes/_app.routines.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -35,24 +35,19 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCatalogRoute = AppCatalogRouteImport.update({
-  id: '/catalog',
-  path: '/catalog',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppCoachRoute = AppCoachRouteImport.update({
   id: '/coach',
   path: '/coach',
   getParentRoute: () => AppRoute,
 } as any)
+const AppExercisesRoute = AppExercisesRouteImport.update({
+  id: '/exercises',
+  path: '/exercises',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProgressRoute = AppProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRankingsRoute = AppRankingsRouteImport.update({
@@ -70,88 +65,93 @@ const AppTrainRoute = AppTrainRouteImport.update({
   path: '/train',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCatalogSlugRoute = AppCatalogSlugRouteImport.update({
-  id: '/catalog_/$slug',
-  path: '/catalog/$slug',
+const AppExercisesSlugRoute = AppExercisesSlugRouteImport.update({
+  id: '/exercises_/$slug',
+  path: '/exercises/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRoutinesIdRoute = AppRoutinesIdRouteImport.update({
+  id: '/routines/$id',
+  path: '/routines/$id',
   getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
-  '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
+  '/exercises': typeof AppExercisesRoute
   '/profile': typeof AppProfileRoute
-  '/progress': typeof AppProgressRoute
   '/rankings': typeof AppRankingsRoute
   '/session': typeof AppSessionRoute
   '/train': typeof AppTrainRoute
-  '/catalog/$slug': typeof AppCatalogSlugRoute
+  '/exercises/$slug': typeof AppExercisesSlugRoute
+  '/routines/$id': typeof AppRoutinesIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
+  '/exercises': typeof AppExercisesRoute
   '/profile': typeof AppProfileRoute
-  '/progress': typeof AppProgressRoute
   '/rankings': typeof AppRankingsRoute
   '/session': typeof AppSessionRoute
   '/train': typeof AppTrainRoute
   '/': typeof AppIndexRoute
-  '/catalog/$slug': typeof AppCatalogSlugRoute
+  '/exercises/$slug': typeof AppExercisesSlugRoute
+  '/routines/$id': typeof AppRoutinesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/_app/catalog': typeof AppCatalogRoute
   '/_app/coach': typeof AppCoachRoute
+  '/_app/exercises': typeof AppExercisesRoute
   '/_app/profile': typeof AppProfileRoute
-  '/_app/progress': typeof AppProgressRoute
   '/_app/rankings': typeof AppRankingsRoute
   '/_app/session': typeof AppSessionRoute
   '/_app/train': typeof AppTrainRoute
   '/_app/': typeof AppIndexRoute
-  '/_app/catalog_/$slug': typeof AppCatalogSlugRoute
+  '/_app/exercises_/$slug': typeof AppExercisesSlugRoute
+  '/_app/routines/$id': typeof AppRoutinesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
-    | '/catalog'
     | '/coach'
+    | '/exercises'
     | '/profile'
-    | '/progress'
     | '/rankings'
     | '/session'
     | '/train'
-    | '/catalog/$slug'
+    | '/exercises/$slug'
+    | '/routines/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
-    | '/catalog'
     | '/coach'
+    | '/exercises'
     | '/profile'
-    | '/progress'
     | '/rankings'
     | '/session'
     | '/train'
     | '/'
-    | '/catalog/$slug'
+    | '/exercises/$slug'
+    | '/routines/$id'
   id:
     | '__root__'
     | '/_app'
     | '/login'
-    | '/_app/catalog'
     | '/_app/coach'
+    | '/_app/exercises'
     | '/_app/profile'
-    | '/_app/progress'
     | '/_app/rankings'
     | '/_app/session'
     | '/_app/train'
     | '/_app/'
-    | '/_app/catalog_/$slug'
+    | '/_app/exercises_/$slug'
+    | '/_app/routines/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,13 +182,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/catalog': {
-      id: '/_app/catalog'
-      path: '/catalog'
-      fullPath: '/catalog'
-      preLoaderRoute: typeof AppCatalogRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/coach': {
       id: '/_app/coach'
       path: '/coach'
@@ -196,18 +189,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoachRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/exercises': {
+      id: '/_app/exercises'
+      path: '/exercises'
+      fullPath: '/exercises'
+      preLoaderRoute: typeof AppExercisesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profile': {
       id: '/_app/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AppProfileRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/progress': {
-      id: '/_app/progress'
-      path: '/progress'
-      fullPath: '/progress'
-      preLoaderRoute: typeof AppProgressRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/rankings': {
@@ -231,38 +224,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTrainRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/catalog_/$slug': {
-      id: '/_app/catalog_/$slug'
-      path: '/catalog/$slug'
-      fullPath: '/catalog/$slug'
-      preLoaderRoute: typeof AppCatalogSlugRouteImport
+    '/_app/exercises_/$slug': {
+      id: '/_app/exercises_/$slug'
+      path: '/exercises/$slug'
+      fullPath: '/exercises/$slug'
+      preLoaderRoute: typeof AppExercisesSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/routines/$id': {
+      id: '/_app/routines/$id'
+      path: '/routines/$id'
+      fullPath: '/routines/$id'
+      preLoaderRoute: typeof AppRoutinesIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
 }
 
 interface AppRouteChildren {
-  AppCatalogRoute: typeof AppCatalogRoute
   AppCoachRoute: typeof AppCoachRoute
+  AppExercisesRoute: typeof AppExercisesRoute
   AppProfileRoute: typeof AppProfileRoute
-  AppProgressRoute: typeof AppProgressRoute
   AppRankingsRoute: typeof AppRankingsRoute
   AppSessionRoute: typeof AppSessionRoute
   AppTrainRoute: typeof AppTrainRoute
   AppIndexRoute: typeof AppIndexRoute
-  AppCatalogSlugRoute: typeof AppCatalogSlugRoute
+  AppExercisesSlugRoute: typeof AppExercisesSlugRoute
+  AppRoutinesIdRoute: typeof AppRoutinesIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppCatalogRoute: AppCatalogRoute,
   AppCoachRoute: AppCoachRoute,
+  AppExercisesRoute: AppExercisesRoute,
   AppProfileRoute: AppProfileRoute,
-  AppProgressRoute: AppProgressRoute,
   AppRankingsRoute: AppRankingsRoute,
   AppSessionRoute: AppSessionRoute,
   AppTrainRoute: AppTrainRoute,
   AppIndexRoute: AppIndexRoute,
-  AppCatalogSlugRoute: AppCatalogSlugRoute,
+  AppExercisesSlugRoute: AppExercisesSlugRoute,
+  AppRoutinesIdRoute: AppRoutinesIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

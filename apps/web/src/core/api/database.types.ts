@@ -39,6 +39,72 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			body_measurements: {
+				Row: {
+					body_fat_pct: number | null;
+					chest_cm: number | null;
+					created_at: string;
+					date: string;
+					hips_cm: number | null;
+					id: string;
+					left_arm_cm: number | null;
+					left_calf_cm: number | null;
+					left_forearm_cm: number | null;
+					left_thigh_cm: number | null;
+					neck_cm: number | null;
+					note: string | null;
+					right_arm_cm: number | null;
+					right_calf_cm: number | null;
+					right_forearm_cm: number | null;
+					right_thigh_cm: number | null;
+					shoulders_cm: number | null;
+					user_id: string;
+					waist_cm: number | null;
+				};
+				Insert: {
+					body_fat_pct?: number | null;
+					chest_cm?: number | null;
+					created_at?: string;
+					date?: string;
+					hips_cm?: number | null;
+					id?: string;
+					left_arm_cm?: number | null;
+					left_calf_cm?: number | null;
+					left_forearm_cm?: number | null;
+					left_thigh_cm?: number | null;
+					neck_cm?: number | null;
+					note?: string | null;
+					right_arm_cm?: number | null;
+					right_calf_cm?: number | null;
+					right_forearm_cm?: number | null;
+					right_thigh_cm?: number | null;
+					shoulders_cm?: number | null;
+					user_id: string;
+					waist_cm?: number | null;
+				};
+				Update: {
+					body_fat_pct?: number | null;
+					chest_cm?: number | null;
+					created_at?: string;
+					date?: string;
+					hips_cm?: number | null;
+					id?: string;
+					left_arm_cm?: number | null;
+					left_calf_cm?: number | null;
+					left_forearm_cm?: number | null;
+					left_thigh_cm?: number | null;
+					neck_cm?: number | null;
+					note?: string | null;
+					right_arm_cm?: number | null;
+					right_calf_cm?: number | null;
+					right_forearm_cm?: number | null;
+					right_thigh_cm?: number | null;
+					shoulders_cm?: number | null;
+					user_id?: string;
+					waist_cm?: number | null;
+				};
+				Relationships: [];
+			};
 			bodyweight: {
 				Row: {
 					date: string;
@@ -113,6 +179,36 @@ export type Database = {
 					},
 				];
 			};
+			planned_exercises: {
+				Row: {
+					created_at: string;
+					date: string;
+					exercise_slug: string;
+					id: string;
+					note: string | null;
+					position: number;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					date: string;
+					exercise_slug: string;
+					id?: string;
+					note?: string | null;
+					position?: number;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					date?: string;
+					exercise_slug?: string;
+					id?: string;
+					note?: string | null;
+					position?: number;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					avatar_color: string;
@@ -155,24 +251,18 @@ export type Database = {
 					id: string;
 					position: number;
 					routine_id: string;
-					target_reps: number | null;
-					target_sets: number | null;
 				};
 				Insert: {
 					exercise_slug: string;
 					id?: string;
 					position: number;
 					routine_id: string;
-					target_reps?: number | null;
-					target_sets?: number | null;
 				};
 				Update: {
 					exercise_slug?: string;
 					id?: string;
 					position?: number;
 					routine_id?: string;
-					target_reps?: number | null;
-					target_sets?: number | null;
 				};
 				Relationships: [
 					{
@@ -194,6 +284,7 @@ export type Database = {
 					updated_at: string;
 					user_id: string;
 					visibility: string;
+					weekdays: number[];
 				};
 				Insert: {
 					created_at?: string;
@@ -204,6 +295,7 @@ export type Database = {
 					updated_at?: string;
 					user_id: string;
 					visibility?: string;
+					weekdays?: number[];
 				};
 				Update: {
 					created_at?: string;
@@ -214,6 +306,7 @@ export type Database = {
 					updated_at?: string;
 					user_id?: string;
 					visibility?: string;
+					weekdays?: number[];
 				};
 				Relationships: [];
 			};
@@ -257,6 +350,54 @@ export type Database = {
 						columns: ["routine_id"];
 						isOneToOne: false;
 						referencedRelation: "routines";
+						referencedColumns: ["id"];
+					},
+				];
+			};
+			set_targets: {
+				Row: {
+					id: string;
+					planned_exercise_id: string | null;
+					position: number;
+					reps: number | null;
+					rest_seconds: number | null;
+					routine_exercise_id: string | null;
+					warmup: boolean;
+					weight_kg: number | null;
+				};
+				Insert: {
+					id?: string;
+					planned_exercise_id?: string | null;
+					position: number;
+					reps?: number | null;
+					rest_seconds?: number | null;
+					routine_exercise_id?: string | null;
+					warmup?: boolean;
+					weight_kg?: number | null;
+				};
+				Update: {
+					id?: string;
+					planned_exercise_id?: string | null;
+					position?: number;
+					reps?: number | null;
+					rest_seconds?: number | null;
+					routine_exercise_id?: string | null;
+					warmup?: boolean;
+					weight_kg?: number | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "set_targets_planned_exercise_id_fkey";
+						columns: ["planned_exercise_id"];
+						isOneToOne: false;
+						referencedRelation: "planned_exercises";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "set_targets_routine_exercise_id_fkey";
+						columns: ["routine_exercise_id"];
+						isOneToOne: false;
+						referencedRelation: "routine_exercises";
 						referencedColumns: ["id"];
 					},
 				];
@@ -307,6 +448,41 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			category_leaderboard: {
+				Args: { p_days?: number; p_slugs: string[] };
+				Returns: {
+					avatar_color: string;
+					avatar_icon: string;
+					best_one_rm_kg: number;
+					display_name: string;
+					exercises: number;
+					last_performed: string;
+					reps: number;
+					sessions: number;
+					sets: number;
+					top_weight_kg: number;
+					user_id: string;
+					volume_kg: number;
+				}[];
+			};
+			distinct_count: { Args: { arr: number[] }; Returns: number };
+			exercise_leaderboard: {
+				Args: { p_days?: number; p_slug: string };
+				Returns: {
+					avatar_color: string;
+					avatar_icon: string;
+					best_one_rm_kg: number;
+					display_name: string;
+					last_performed: string;
+					reps: number;
+					sessions: number;
+					sets: number;
+					top_seconds: number;
+					top_weight_kg: number;
+					user_id: string;
+					volume_kg: number;
+				}[];
+			};
 			leaderboard: {
 				Args: { p_days?: number };
 				Returns: {

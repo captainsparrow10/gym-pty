@@ -50,7 +50,10 @@ export function withinWindow(
 }
 
 export type ExerciseRank = {
+	/** The slug when ranking exercises, otherwise the category's own name. */
 	slug: string;
+	/** Distinct exercises behind this row. One, unless the row is a category. */
+	exercises: number;
 	/** Distinct days this exercise was trained. */
 	sessions: number;
 	sets: number;
@@ -61,21 +64,43 @@ export type ExerciseRank = {
 	lastDate: string | null;
 };
 
-export function rankExercises(history: HistorySet[]): ExerciseRank[] {
-	const byslug = new Map<string, { sets: LoggedSet[]; dates: Set<string> }>();
+/**
+ * Ranks the history by whatever key the caller groups on.
+ *
+ * `rankExercises` is this with the identity key. The generalisation exists so
+ * a muscle ranking and an exercise ranking are computed by the same code from
+ * the same sets — two implementations of "volume" eventually disagree, and the
+ * category totals have to add up to the exercise totals or the page is lying.
+ *
+ * `topWeightKg` and `bestOneRmKg` stay the max over the group. For a category
+ * that means the heaviest thing you did anywhere in it, which is the only
+ * reading of "heaviest load for Legs" that means anything.
+ */
+export function rankBy(
+	history: HistorySet[],
+	keyOf: (set: HistorySet) => string,
+): ExerciseRank[] {
+	const groups = new Map<
+		string,
+		{ sets: LoggedSet[]; dates: Set<string>; slugs: Set<string> }
+	>();
 
 	for (const set of history) {
-		const entry = byslug.get(set.slug) ?? {
+		const key = keyOf(set);
+		const entry = groups.get(key) ?? {
 			sets: [],
 			dates: new Set<string>(),
+			slugs: new Set<string>(),
 		};
 		entry.sets.push({ reps: set.reps, weightKg: set.weightKg });
 		entry.dates.add(set.date);
-		byslug.set(set.slug, entry);
+		entry.slugs.add(set.slug);
+		groups.set(key, entry);
 	}
 
-	return [...byslug.entries()].map(([slug, entry]) => ({
+	return [...groups.entries()].map(([slug, entry]) => ({
 		slug,
+		exercises: entry.slugs.size,
 		sessions: entry.dates.size,
 		sets: entry.sets.length,
 		reps: entry.sets.reduce((total, set) => total + set.reps, 0),
@@ -90,6 +115,10 @@ export function rankExercises(history: HistorySet[]): ExerciseRank[] {
 		bestOneRmKg: bestOneRepMax(entry.sets),
 		lastDate: [...entry.dates].sort().at(-1) ?? null,
 	}));
+}
+
+export function rankExercises(history: HistorySet[]): ExerciseRank[] {
+	return rankBy(history, (set) => set.slug);
 }
 
 export type RankMetric =

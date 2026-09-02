@@ -11,6 +11,8 @@ export type Profile = {
 	avatarColor: AvatarColorName;
 	/** Whether this profile appears in the leaderboard and is readable by others. */
 	publicProfile: boolean;
+	/** Default rest between sets, when a plan does not say. */
+	restSeconds: number;
 };
 
 export function useProfile() {
@@ -28,7 +30,9 @@ export function useProfile() {
 			 */
 			const { data, error } = await supabase
 				.from("profiles")
-				.select("id, display_name, avatar_icon, avatar_color, public_profile")
+				.select(
+					"id, display_name, avatar_icon, avatar_color, public_profile, rest_seconds",
+				)
 				.eq("id", auth.user.id)
 				.single();
 
@@ -40,6 +44,7 @@ export function useProfile() {
 				avatarIcon: data.avatar_icon as AvatarIconName,
 				avatarColor: data.avatar_color as AvatarColorName,
 				publicProfile: data.public_profile,
+				restSeconds: data.rest_seconds,
 			};
 		},
 	});
@@ -103,6 +108,32 @@ export function useSetPublicProfile() {
 			const { error } = await supabase
 				.from("profiles")
 				.update({ public_profile: publicProfile })
+				.eq("id", auth.user.id);
+			if (error) throw error;
+		},
+		onSuccess: refresh,
+	});
+}
+
+/**
+ * Default rest between sets.
+ *
+ * The column has existed since the first schema and was never editable: the
+ * session used a hardcoded 90 until recently, and once it started reading this
+ * there was still nowhere to change it. A plan's own rest still wins over it;
+ * this is what applies when nothing else says.
+ */
+export function useUpdateRestSeconds() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: async (restSeconds: number) => {
+			const { data: auth } = await supabase.auth.getUser();
+			if (!auth.user) throw new Error("Not signed in.");
+
+			const { error } = await supabase
+				.from("profiles")
+				.update({ rest_seconds: restSeconds })
 				.eq("id", auth.user.id);
 			if (error) throw error;
 		},

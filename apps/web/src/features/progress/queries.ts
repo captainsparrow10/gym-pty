@@ -16,6 +16,8 @@ export type HistorySet = {
 	slug: string;
 	reps: number;
 	weightKg: number;
+	/** Timed work — a plank, a hang — where reps and load are both zero. */
+	seconds: number | null;
 	warmup: boolean;
 };
 
@@ -26,7 +28,7 @@ export function useHistory() {
 			const { data, error } = await supabase
 				.from("sessions")
 				.select(
-					"date, logged_exercises(exercise_slug, sets(reps, weight_kg, warmup))",
+					"date, logged_exercises(exercise_slug, sets(reps, weight_kg, seconds, warmup))",
 				)
 				.not("finished_at", "is", null)
 				.order("date", { ascending: true });
@@ -40,6 +42,7 @@ export function useHistory() {
 						slug: exercise.exercise_slug,
 						reps: set.reps,
 						weightKg: Number(set.weight_kg),
+						seconds: set.seconds,
 						warmup: set.warmup,
 					})),
 				),
@@ -48,16 +51,38 @@ export function useHistory() {
 	});
 }
 
-/** ISO date of the Monday that starts the week containing `iso`. */
-export function weekStart(iso: string): string {
+/**
+ * Dates in this app are calendar days, not instants.
+ *
+ * A session dated 2026-08-31 happened on the 31st wherever you were; it has no
+ * time zone. Both directions of the conversion have a trap, and both were hit:
+ *
+ *   `new Date("2026-08-31")`   parses as UTC midnight, which reads back as the
+ *                              30th anywhere west of Greenwich.
+ *   `date.toISOString()`       converts to UTC, so an evening in Panama is
+ *                              already tomorrow.
+ *
+ * These two do it in local terms, and every calendar calculation goes through
+ * them rather than through the `Date` string constructor.
+ */
+export function parseIso(iso: string): Date {
 	const [year, month, day] = iso.split("-").map(Number);
-	const date = new Date(year, month - 1, day);
-	// getDay() is 0 for Sunday; shift so Monday starts the week.
-	const offset = (date.getDay() + 6) % 7;
-	date.setDate(date.getDate() - offset);
+	return new Date(year, month - 1, day);
+}
+
+export function toIso(date: Date): string {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
 		date.getDate(),
 	).padStart(2, "0")}`;
+}
+
+/** ISO date of the Monday that starts the week containing `iso`. */
+export function weekStart(iso: string): string {
+	const date = parseIso(iso);
+	// getDay() is 0 for Sunday; shift so Monday starts the week.
+	const offset = (date.getDay() + 6) % 7;
+	date.setDate(date.getDate() - offset);
+	return toIso(date);
 }
 
 export type WeeklyPoint = {
@@ -82,16 +107,18 @@ export function weeklyVolume(history: HistorySet[], weeks = 12): WeeklyPoint[] {
 	// A missing week is a real signal — it means nothing was trained — so the
 	// series is built from a continuous range rather than only from the weeks
 	// that happen to have data.
-	const today = new Date();
-	const monday = new Date(weekStart(today.toISOString().slice(0, 10)));
+	// Built through `toIso`/`parseIso`, not through `new Date(string)` and
+	// `toISOString()`. Those two shifted every key one day back, so the series
+	// asked for Sundays while the totals were filed under Mondays: every lookup
+	// missed and the whole chart read zero. It was invisible with a couple of
+	// weeks of data, where one empty bar looks like a week off.
+	const monday = parseIso(weekStart(toIso(new Date())));
 	const series: WeeklyPoint[] = [];
 
 	for (let i = weeks - 1; i >= 0; i--) {
 		const date = new Date(monday);
 		date.setDate(date.getDate() - i * 7);
-		const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-			date.getDate(),
-		).padStart(2, "0")}`;
+		const key = toIso(date);
 		series.push(totals.get(key) ?? { week: key, volumeKg: 0, sets: 0 });
 	}
 
@@ -162,4 +189,68 @@ export function trackableExercises(history: HistorySet[]): string[] {
 		.filter(([, dates]) => dates.size >= 2)
 		.sort((a, b) => b[1].size - a[1].size)
 		.map(([slug]) => slug);
+}
+
+export type ExerciseDay = {
+	date: string;
+	sets: number;
+	reps: number;
+	volumeKg: number;
+	topWeightKg: number;
+	bestOneRmKg: number;
+	topSeconds: number;
+	/** The heaviest set of the day, which is what you actually remember doing. */
+	topSet: { reps: number; weightKg: number } | null;
+};
+
+/**
+ * One exercise, one row per training day, newest last.
+ *
+ * `strengthOverTime` already returns estimated 1RM per day for the chart. This
+ * keeps the load and the set that produced it as well, because a 1RM is an
+ * inference and "8 × 60" is what happened.
+ *
+ * Warm-ups are excluded, as everywhere else, so a light first set cannot show
+ * up as a bad day.
+ */
+export function exerciseHistory(
+	history: HistorySet[],
+	slug: string,
+): ExerciseDay[] {
+	const byDate = new Map<string, HistorySet[]>();
+
+	for (const set of history) {
+		if (set.slug !== slug || set.warmup) continue;
+		byDate.set(set.date, [...(byDate.get(set.date) ?? []), set]);
+	}
+
+	return [...byDate.entries()]
+		.map(([date, sets]) => {
+			const working: LoggedSet[] = sets.map((set) => ({
+				reps: set.reps,
+				weightKg: set.weightKg,
+			}));
+			// Heaviest first, and on a tie the one with more reps — the harder of
+			// two sets at the same load.
+			const [topSet] = [...sets].sort(
+				(a, b) => b.weightKg - a.weightKg || b.reps - a.reps,
+			);
+
+			return {
+				date,
+				sets: sets.length,
+				reps: sets.reduce((total, set) => total + set.reps, 0),
+				volumeKg: sets.reduce(
+					(total, set) => total + set.reps * set.weightKg,
+					0,
+				),
+				topWeightKg: Math.max(...sets.map((set) => set.weightKg)),
+				topSeconds: Math.max(0, ...sets.map((set) => set.seconds ?? 0)),
+				bestOneRmKg: bestOneRepMax(working),
+				topSet: topSet
+					? { reps: topSet.reps, weightKg: topSet.weightKg }
+					: null,
+			};
+		})
+		.sort((a, b) => a.date.localeCompare(b.date));
 }

@@ -24,6 +24,8 @@ export type SessionExercise = {
 export type ActiveSession = {
 	id: string;
 	startedAt: string;
+	/** The routine this was started from, when it was. */
+	routineId: string | null;
 	exercises: SessionExercise[];
 };
 
@@ -42,7 +44,7 @@ export function useActiveSession() {
 			const { data, error } = await supabase
 				.from("sessions")
 				.select(
-					"id, started_at, logged_exercises(id, exercise_slug, position, sets(id, position, reps, weight_kg, seconds, warmup))",
+					"id, started_at, routine_id, logged_exercises(id, exercise_slug, position, sets(id, position, reps, weight_kg, seconds, warmup))",
 				)
 				.is("finished_at", null)
 				.order("position", { referencedTable: "logged_exercises" })
@@ -54,6 +56,7 @@ export function useActiveSession() {
 			return {
 				id: data.id,
 				startedAt: data.started_at,
+				routineId: data.routine_id,
 				exercises: (data.logged_exercises ?? [])
 					.map((exercise) => ({
 						id: exercise.id,

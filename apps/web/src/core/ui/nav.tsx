@@ -3,7 +3,6 @@ import {
 	BotMessageSquare,
 	Dumbbell,
 	House,
-	LineChart,
 	type LucideIcon,
 	PersonStanding,
 	Trophy,
@@ -28,21 +27,28 @@ type Destination = {
  * to discover.
  */
 const TAB_BAR: Destination[] = [
-	{ to: "/", label: "Today", icon: House },
+	{ to: "/", label: "Home", icon: House },
 	{ to: "/train", label: "Train", icon: PersonStanding },
-	{ to: "/catalog", label: "Exercises", icon: Dumbbell },
-	{ to: "/progress", label: "Progress", icon: LineChart },
+	{ to: "/exercises", label: "Exercises", icon: Dumbbell },
+	{ to: "/rankings", label: "Rankings", icon: Trophy },
 	{ to: "/coach", label: "Coach", icon: BotMessageSquare },
 ];
 
+/*
+ * Progress is gone as a destination, not as a feature: its panels are the home
+ * screen now. It had been a tab you were expected to remember to open, holding
+ * the answers to the questions the app exists for, while the screen you
+ * actually land on showed a button and a list.
+ *
+ * Its slot goes to Rankings, which until now had no room in the five-slot
+ * bottom bar and was reached through a link parked at the top of Progress.
+ */
 const SIDEBAR: Destination[] = [
-	...TAB_BAR.slice(0, 4),
-	{ to: "/rankings", label: "Rankings", icon: Trophy },
-	...TAB_BAR.slice(4),
+	...TAB_BAR,
 	{ to: "/profile", label: "Profile", icon: User },
 ];
 
-/** `exact` only on the index, so /catalog/squat still lights up Exercises. */
+/** `exact` only on the index, so /exercises/squat still lights up Exercises. */
 const activeOptions = (to: string) => ({ exact: to === "/" });
 
 /**

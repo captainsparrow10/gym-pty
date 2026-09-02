@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { reorderPositions } from "@/core/api/reorder";
 import { supabase } from "@/core/api/supabase";
+import { type SetTarget, toSetTargets } from "@/features/plan/set-targets";
 import { activeSessionKey } from "@/features/session/queries";
 
 export const routinesKey = ["routines"] as const;
@@ -9,8 +10,11 @@ export type RoutineExercise = {
 	id: string;
 	slug: string;
 	position: number;
-	targetSets: number | null;
-	targetReps: number | null;
+	/**
+	 * One entry per planned set, so a plan can say "8 at 60, 6 at 70, 4 at 80".
+	 * The count of sets is the length of this list.
+	 */
+	sets: SetTarget[];
 };
 
 export type Visibility = "private" | "public";
@@ -22,6 +26,8 @@ export type Routine = {
 	/** 1-5 self-rating. Null means unrated, which is not the same as bad. */
 	rating: number | null;
 	visibility: Visibility;
+	/** Planned weekdays, 0 = Monday .. 6 = Sunday. Empty means unscheduled. */
+	weekdays: number[];
 	exercises: RoutineExercise[];
 };
 
@@ -66,7 +72,7 @@ export function useRoutines() {
 			const { data, error } = await supabase
 				.from("routines")
 				.select(
-					"id, name, notes, rating, visibility, routine_exercises(id, exercise_slug, position, target_sets, target_reps)",
+					"id, name, notes, rating, visibility, weekdays, routine_exercises(id, exercise_slug, position, set_targets(id, position, reps, weight_kg, rest_seconds, warmup))",
 				)
 				.eq("user_id", auth.user.id)
 				.order("created_at", { ascending: true });
@@ -79,13 +85,13 @@ export function useRoutines() {
 				notes: routine.notes,
 				rating: routine.rating,
 				visibility: routine.visibility as Visibility,
+				weekdays: routine.weekdays ?? [],
 				exercises: (routine.routine_exercises ?? [])
 					.map((exercise) => ({
 						id: exercise.id,
 						slug: exercise.exercise_slug,
 						position: exercise.position,
-						targetSets: exercise.target_sets,
-						targetReps: exercise.target_reps,
+						sets: toSetTargets(exercise.set_targets),
 					}))
 					.sort((a, b) => a.position - b.position),
 			}));
@@ -113,7 +119,7 @@ export function usePublicRoutines() {
 			const { data, error } = await supabase
 				.from("routines")
 				.select(
-					"id, name, notes, rating, visibility, user_id, routine_exercises(id, exercise_slug, position, target_sets, target_reps)",
+					"id, name, notes, rating, visibility, weekdays, user_id, routine_exercises(id, exercise_slug, position, set_targets(id, position, reps, weight_kg, rest_seconds, warmup))",
 				)
 				.eq("visibility", "public")
 				.order("created_at", { ascending: false });
@@ -144,13 +150,13 @@ export function usePublicRoutines() {
 					notes: routine.notes,
 					rating: routine.rating,
 					visibility: routine.visibility as Visibility,
+					weekdays: routine.weekdays ?? [],
 					exercises: (routine.routine_exercises ?? [])
 						.map((exercise) => ({
 							id: exercise.id,
 							slug: exercise.exercise_slug,
 							position: exercise.position,
-							targetSets: exercise.target_sets,
-							targetReps: exercise.target_reps,
+							sets: toSetTargets(exercise.set_targets),
 						}))
 						.sort((a, b) => a.position - b.position),
 					owner: owner
@@ -457,5 +463,43 @@ export function useReorderRoutineExercises() {
 		},
 
 		onSettled: () => queryClient.invalidateQueries({ queryKey: routinesKey }),
+	});
+}
+
+export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/**
+ * The weekday index the app uses: 0 = Monday .. 6 = Sunday.
+ *
+ * `Date.getDay()` is Sunday-first, so every crossing of that boundary converts
+ * here rather than inline, where the two conventions look identical and a
+ * schedule silently lands a day off.
+ */
+export function weekdayOf(date: Date): number {
+	return (date.getDay() + 6) % 7;
+}
+
+/** Sets which weekdays a routine is planned for. */
+export function useSetRoutineWeekdays() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: async ({
+			id,
+			weekdays,
+		}: {
+			id: string;
+			weekdays: number[];
+		}) => {
+			const { error } = await supabase
+				.from("routines")
+				// Sorted and deduplicated before it leaves: the column's check
+				// constraint rejects duplicates, and an unsorted array would make
+				// two identical schedules compare unequal.
+				.update({ weekdays: [...new Set(weekdays)].sort((a, b) => a - b) })
+				.eq("id", id);
+			if (error) throw error;
+		},
+		onSuccess: refresh,
 	});
 }

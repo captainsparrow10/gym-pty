@@ -2,6 +2,28 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
+ * The one content width in the app.
+ *
+ * There used to be three — wide, prose and full, chosen per page — and the
+ * result was that the gutters and the content edge moved as you navigated.
+ * Even a well-chosen narrower cap reads as a mistake when the page before it
+ * was wider: the eye tracks the left edge, and an edge that jumps is more
+ * distracting than a line of text being longer than ideal.
+ *
+ * 80rem, which is 1280px: a laptop's usable width. Wider than that and a row
+ * of a list becomes a stretch of empty space with a number at each end.
+ *
+ * Line length is still a real constraint, but it belongs to the block of text
+ * rather than to the page. A screen that needs a narrow reading column — the
+ * exercise instructions, the settings form — puts that column inside this one
+ * instead of shrinking the page around it.
+ *
+ * Used by both the header and the body so their left edges line up. Anything
+ * that needs to align with page content uses this and does not invent its own.
+ */
+export const CONTENT_WIDTH = "lg:mx-auto lg:w-full lg:max-w-7xl";
+
+/**
  * The application frame.
  *
  * Two layouts, not one stretched.
@@ -17,14 +39,29 @@ import { cn } from "@/lib/utils";
  */
 export function AppFrame({ children }: { children: ReactNode }) {
 	return (
-		<div className="min-h-dvh bg-muted/40 md:py-6 lg:flex lg:bg-background lg:py-0">
+		/*
+		 * A fixed viewport height, not a minimum, and the scrolling happens
+		 * inside.
+		 *
+		 * `min-h-dvh` let the column grow with its content, so the body's
+		 * `flex-1 overflow-y-auto` never had anything to overflow — the document
+		 * scrolled instead and the "scroll element" measured 9024px tall on the
+		 * exercises page. TanStack Virtual asks that element how big the viewport
+		 * is, believed it, and mounted all 304 rows: every row fired its own
+		 * artwork fetch, and the resulting storm of query notifications hit
+		 * React's nested-update limit and took the page down.
+		 *
+		 * `min-h-0` on the flex children is the other half. A flex item's default
+		 * minimum size is its content, so without it a child refuses to shrink
+		 * below what it holds and the constraint above never reaches the
+		 * scrollable box.
+		 */
+		<div className="h-dvh overflow-hidden bg-muted/40 md:py-6 lg:flex lg:bg-background lg:py-0">
 			<div
 				className={cn(
-					"relative mx-auto flex min-h-dvh w-full max-w-frame flex-col bg-background",
-					"md:min-h-[calc(100dvh-3rem)] md:rounded-xl md:border md:shadow-2xl",
-					// The frame chrome is phone dressing; on desktop the app owns the
-					// whole viewport and the sidebar provides the only border.
-					"lg:min-h-dvh lg:max-w-none lg:flex-row lg:rounded-none lg:border-0 lg:shadow-none",
+					"relative mx-auto flex h-full min-h-0 w-full max-w-frame flex-col overflow-hidden bg-background",
+					"md:rounded-xl md:border md:shadow-2xl",
+					"lg:max-w-none lg:flex-row lg:rounded-none lg:border-0 lg:shadow-none",
 				)}
 			>
 				{children}
@@ -36,7 +73,9 @@ export function AppFrame({ children }: { children: ReactNode }) {
 /** Column holding the header and the scrolling body, beside the sidebar. */
 export function AppMain({ children }: { children: ReactNode }) {
 	return (
-		<div className="relative flex min-w-0 flex-1 flex-col">{children}</div>
+		<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+			{children}
+		</div>
 	);
 }
 
@@ -51,20 +90,17 @@ export function AppMain({ children }: { children: ReactNode }) {
 export function AppScroll({
 	children,
 	className,
-	/** Let the page manage its own width, for grids that should fill the screen. */
-	full = false,
 }: {
 	children: ReactNode;
 	className?: string;
-	full?: boolean;
 }) {
 	return (
 		<main
 			className={cn(
-				"flex-1 overflow-y-auto px-4 pt-4",
+				"min-h-0 flex-1 overflow-y-auto px-4 pt-4",
 				"pb-[calc(5rem+env(safe-area-inset-bottom))]",
 				"lg:px-8 lg:pb-10 lg:pt-6",
-				!full && "lg:mx-auto lg:w-full lg:max-w-5xl",
+				CONTENT_WIDTH,
 				className,
 			)}
 		>
@@ -81,11 +117,29 @@ export function AppHeader({
 	action?: ReactNode;
 }) {
 	return (
-		<header className="flex items-center justify-between gap-3 border-b px-4 py-3 lg:px-8 lg:py-5">
-			<h1 className="font-display text-2xl font-bold uppercase tracking-wide lg:text-3xl">
-				{title}
-			</h1>
-			{action}
+		/*
+		 * The rule spans the viewport; the title inside it sits on the same
+		 * left edge as the content below.
+		 *
+		 * With the header at full width and the body centred at CONTENT_WIDTH,
+		 * the two left edges drift apart as the screen grows — the title ends up
+		 * hard against the sidebar while the first card starts a hundred pixels
+		 * in. A misaligned edge is the thing the eye actually tracks, and it
+		 * reads as a broken layout even when nothing else is wrong.
+		 */
+		<header className="border-b">
+			<div
+				className={cn(
+					"flex items-center justify-between gap-3 px-4 py-3",
+					"lg:px-8 lg:py-5",
+					CONTENT_WIDTH,
+				)}
+			>
+				<h1 className="font-display text-2xl font-bold uppercase tracking-wide lg:text-3xl">
+					{title}
+				</h1>
+				{action}
+			</div>
 		</header>
 	);
 }

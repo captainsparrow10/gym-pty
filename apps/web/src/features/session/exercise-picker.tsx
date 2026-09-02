@@ -16,7 +16,7 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import { ExerciseArt } from "@/features/catalog/exercise-art";
+import { ExerciseArt } from "@/features/exercises/exercise-art";
 
 /** Pre-normalized once, not per keystroke over 302 rows. */
 const HAYSTACK = new Map(
