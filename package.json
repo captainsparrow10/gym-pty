@@ -1,27 +1,34 @@
 {
-  "name": "gym",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@10.20.0",
-  "engines": {
-    "node": ">=22.13"
-  },
-  "scripts": {
-    "dev": "pnpm --filter @gym/web dev",
-    "build": "pnpm --filter @gym/web build",
-    "build:catalog": "node scripts/build-catalog.ts",
-    "check:contrast": "node scripts/check-contrast.ts",
-    "build:catalog:ai": "node scripts/build-catalog-ai.ts",
-    "smoke:session": "node scripts/smoke-session.ts",
-    "smoke:social": "node scripts/smoke-social.ts",
-    "smoke:routines": "node scripts/smoke-routines.ts",
-    "smoke:add": "node scripts/smoke-add-to-session.ts",
-    "smoke:rankings": "node scripts/smoke-rankings.ts",
-    "smoke:reorder": "node scripts/smoke-reorder.ts",
-    "build:yoga": "node scripts/build-yoga-art.ts",
-    "import:drawing": "node scripts/import-drawing.ts"
-  },
-  "devDependencies": {
-    "@supabase/supabase-js": "^2.114.0"
-  }
+	"name": "gym",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@10.20.0",
+	"engines": {
+		"node": ">=22.13"
+	},
+	"scripts": {
+		"dev": "pnpm --filter @gym/web dev",
+		"build": "pnpm --filter @gym/web build",
+		"build:catalog": "node scripts/build-catalog.ts",
+		"check:contrast": "node scripts/check-contrast.ts",
+		"build:catalog:ai": "node scripts/build-catalog-ai.ts",
+		"smoke:session": "node scripts/smoke-session.ts",
+		"smoke:social": "node scripts/smoke-social.ts",
+		"smoke:routines": "node scripts/smoke-routines.ts",
+		"smoke:add": "node scripts/smoke-add-to-session.ts",
+		"smoke:rankings": "node scripts/smoke-rankings.ts",
+		"smoke:reorder": "node scripts/smoke-reorder.ts",
+		"build:yoga": "node scripts/build-yoga-art.ts",
+		"import:drawing": "node scripts/import-drawing.ts",
+		"smoke:targets": "node scripts/smoke-targets.ts",
+		"smoke:exercise-board": "node scripts/smoke-exercise-board.ts",
+		"seed:demo": "SUPABASE_SERVICE_ROLE=$(supabase projects api-keys --project-ref qucmgwkcureyiipzzxxh -o json | node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c).on(\"end\",()=>{const k=JSON.parse(d).find(x=>x.name===\"service_role\");process.stdout.write(k?k.api_key:\"\")})') node scripts/seed-demo.ts",
+		"clean:test-users": "SUPABASE_SERVICE_ROLE=$(supabase projects api-keys --project-ref qucmgwkcureyiipzzxxh -o json | node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c).on(\"end\",()=>{const k=JSON.parse(d).find(x=>x.name===\"service_role\");process.stdout.write(k?k.api_key:\"\")})') node scripts/clean-test-users.ts",
+		"smoke:schedule": "node scripts/smoke-schedule.ts",
+		"check:estimates": "node scripts/check-estimates.ts",
+		"smoke:body": "node scripts/smoke-body.ts"
+	},
+	"devDependencies": {
+		"@supabase/supabase-js": "^2.114.0"
+	}
 }
