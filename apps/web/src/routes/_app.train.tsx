@@ -4,13 +4,16 @@ import { useMemo, useState } from "react";
 import Model, { type IExerciseData, type Muscle } from "react-body-highlighter";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader, AppScroll } from "@/core/ui/app-frame";
 import {
 	bodyRegionsFor,
 	catalogMusclesFor,
 } from "@/features/catalog/muscle-map";
+import { RoutineList } from "@/features/routines/routine-list";
 
 const searchSchema = z.object({
+	tab: z.enum(["routines", "map"]).optional(),
 	view: z.enum(["anterior", "posterior"]).optional(),
 });
 
@@ -42,7 +45,7 @@ for (const entry of COVERAGE) {
 const HEAT = ["#7c2d12", "#9a3412", "#c2410c", "#ea580c", "#f97316"];
 
 function TrainPage() {
-	const { view = "anterior" } = Route.useSearch();
+	const { tab = "routines", view = "anterior" } = Route.useSearch();
 	const navigate = useNavigate();
 	const [hovered, setHovered] = useState<Muscle | null>(null);
 
@@ -63,84 +66,110 @@ function TrainPage() {
 		<>
 			<AppHeader title="Entrenar" />
 			<AppScroll>
-				<p className="mb-4 text-sm text-muted-foreground">
-					Tocá un músculo para ver sus ejercicios.
-				</p>
+				<Tabs
+					value={tab}
+					onValueChange={(value) =>
+						navigate({
+							to: "/train",
+							search: (prev) => ({ ...prev, tab: value as "routines" | "map" }),
+						})
+					}
+					className="mb-4"
+				>
+					<TabsList className="grid w-full grid-cols-2">
+						<TabsTrigger value="routines" className="min-h-11">
+							Rutinas
+						</TabsTrigger>
+						<TabsTrigger value="map" className="min-h-11">
+							Por músculo
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
 
-				<div className="mb-4 grid grid-cols-2 gap-2">
-					{(["anterior", "posterior"] as const).map((option) => (
-						<Button
-							key={option}
-							variant={view === option ? "default" : "outline"}
-							onClick={() =>
-								navigate({ to: "/train", search: { view: option } })
-							}
-							className="h-11"
-						>
-							{option === "anterior" ? "Frente" : "Espalda"}
-						</Button>
-					))}
-				</div>
+				{tab === "routines" && <RoutineList />}
 
-				<div className="rounded-xl border bg-card p-4">
-					<Model
-						type={view}
-						data={COVERAGE}
-						bodyColor="var(--color-muted)"
-						highlightedColors={HEAT}
-						onClick={(stats) => {
-							if ("muscle" in stats) openCatalog(stats.muscle);
-						}}
-						svgStyle={{ width: "100%", cursor: "pointer" }}
-					/>
-				</div>
+				{tab === "map" && (
+					<>
+						<p className="mb-4 text-sm text-muted-foreground">
+							Tocá un músculo para ver sus ejercicios.
+						</p>
 
-				{summary ? (
-					<p className="mt-3 text-center text-sm">
-						<span className="font-medium">
-							{summary.catalogMuscles.join(" · ")}
-						</span>{" "}
-						<span className="text-muted-foreground">
-							— {summary.count} ejercicios
-						</span>
-					</p>
-				) : (
-					<p className="mt-3 text-center text-sm text-muted-foreground">
-						El tono indica cuántos ejercicios cubre cada zona.
-					</p>
-				)}
-
-				{/*
-				 * The model has no keyboard affordance of its own, so the region list
-				 * below is the accessible path to the same filters rather than a
-				 * decorative legend.
-				 */}
-				<h2 className="mt-6 mb-2 font-display text-lg font-semibold uppercase tracking-wide">
-					Por zona
-				</h2>
-				<ul className="grid grid-cols-2 gap-2">
-					{[...COUNTS.entries()]
-						.sort((a, b) => b[1] - a[1])
-						.map(([muscle, count]) => (
-							<li key={muscle}>
-								<button
-									type="button"
-									onClick={() => openCatalog(muscle)}
-									onFocus={() => setHovered(muscle)}
-									onMouseEnter={() => setHovered(muscle)}
-									onMouseLeave={() => setHovered(null)}
-									className="flex min-h-11 w-full items-center justify-between rounded-lg border bg-card px-3 text-left text-sm transition-colors hover:border-primary"
+						<div className="mb-4 grid grid-cols-2 gap-2">
+							{(["anterior", "posterior"] as const).map((option) => (
+								<Button
+									key={option}
+									variant={view === option ? "default" : "outline"}
+									onClick={() =>
+										navigate({ to: "/train", search: { view: option } })
+									}
+									className="h-11"
 								>
-									<span className="truncate">
-										{catalogMusclesFor(muscle)[0]}
-									</span>
-									<span className="ml-2 shrink-0 text-muted-foreground">
-										{count}
-									</span>
-								</button>
-							</li>
-						))}
-				</ul>
+									{option === "anterior" ? "Frente" : "Espalda"}
+								</Button>
+							))}
+						</div>
+
+						<div className="rounded-xl border bg-card p-4">
+							<Model
+								type={view}
+								data={COVERAGE}
+								bodyColor="var(--color-muted)"
+								highlightedColors={HEAT}
+								onClick={(stats) => {
+									if ("muscle" in stats) openCatalog(stats.muscle);
+								}}
+								svgStyle={{ width: "100%", cursor: "pointer" }}
+							/>
+						</div>
+
+						{summary ? (
+							<p className="mt-3 text-center text-sm">
+								<span className="font-medium">
+									{summary.catalogMuscles.join(" · ")}
+								</span>{" "}
+								<span className="text-muted-foreground">
+									— {summary.count} ejercicios
+								</span>
+							</p>
+						) : (
+							<p className="mt-3 text-center text-sm text-muted-foreground">
+								El tono indica cuántos ejercicios cubre cada zona.
+							</p>
+						)}
+
+						{/*
+						 * The model has no keyboard affordance of its own, so the region list
+						 * below is the accessible path to the same filters rather than a
+						 * decorative legend.
+						 */}
+						<h2 className="mt-6 mb-2 font-display text-lg font-semibold uppercase tracking-wide">
+							Por zona
+						</h2>
+						<ul className="grid grid-cols-2 gap-2">
+							{[...COUNTS.entries()]
+								.sort((a, b) => b[1] - a[1])
+								.map(([muscle, count]) => (
+									<li key={muscle}>
+										<button
+											type="button"
+											onClick={() => openCatalog(muscle)}
+											onFocus={() => setHovered(muscle)}
+											onMouseEnter={() => setHovered(muscle)}
+											onMouseLeave={() => setHovered(null)}
+											className="flex min-h-11 w-full items-center justify-between rounded-lg border bg-card px-3 text-left text-sm transition-colors hover:border-primary"
+										>
+											<span className="truncate">
+												{catalogMusclesFor(muscle)[0]}
+											</span>
+											<span className="ml-2 shrink-0 text-muted-foreground">
+												{count}
+											</span>
+										</button>
+									</li>
+								))}
+						</ul>
+					</>
+				)}
 			</AppScroll>
 		</>
 	);

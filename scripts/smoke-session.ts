@@ -37,42 +37,32 @@ const check = (label: string, ok: boolean, detail = "") => {
 /*
  * A throwaway account per run.
  *
- * Not @example.com: Supabase rejects it as an invalid address. The domain only
- * has to look real — nothing is ever sent to it.
+ * The project has autoconfirm on, so sign-up returns a session immediately and
+ * nothing below has to wait on a confirmation link. Using a fresh account each
+ * time rather than the real one means a bug in this script can never touch
+ * actual training history.
  *
- * This requires "Confirm email" to be OFF for the project (Authentication >
- * Sign In / Providers > Email). With it on, signUp returns a user but no
- * session, and every authenticated query below fails.
+ * The auth user itself is left behind — the anon key cannot delete users — so
+ * these pile up under Authentication > Users. They own nothing after the
+ * cleanup step and can be removed from the dashboard whenever.
  */
 const email = `smoke-${Date.now()}@gmail.com`;
 const password = "smoke-test-password";
 
 console.log("→ auth");
-const CONFIRM_HINT =
-	"\n  El proyecto tiene la confirmación de email activada.\n" +
-	"  Desactivala en Authentication > Sign In / Providers > Email > Confirm email\n" +
-	"  y volvé a correr esto. Sin eso el registro no devuelve sesión y nada de\n" +
-	"  lo que sigue puede autenticarse.";
-
 const { data: signUp, error: signUpError } = await supabase.auth.signUp({ email, password });
-
-if (signUpError) {
-	// With confirmations on, Supabase tries to send mail and trips its own
-	// built-in send limit long before anything here gets a session.
-	if (signUpError.code === "over_email_send_rate_limit") {
-		console.error(CONFIRM_HINT);
-		process.exit(1);
-	}
-	throw signUpError;
-}
+if (signUpError) throw signUpError;
 
 if (!signUp.session) {
-	console.error(CONFIRM_HINT);
+	console.error(
+		"  El registro no devolvió sesión, así que la confirmación de email volvió a\n" +
+			"  activarse. Revisá mailer_autoconfirm en la config de auth del proyecto.",
+	);
 	process.exit(1);
 }
 
 const userId = signUp.user?.id;
-check("cuenta creada y con sesión", Boolean(userId));
+check("cuenta creada con sesión", Boolean(userId));
 
 // The schema creates a profile row from a trigger on auth.users.
 const { data: profile } = await supabase.from("profiles").select("id, unit, rest_seconds").single();
@@ -155,10 +145,25 @@ const { data: stillOpen } = await supabase
 check("ya no queda sesión abierta", stillOpen === null);
 
 // With the first one closed, a new session must be allowed.
-const { error: secondError } = await supabase
+const { data: second, error: secondError } = await supabase
 	.from("sessions")
-	.insert({ user_id: userId as string });
+	.insert({ user_id: userId as string })
+	.select("id")
+	.single();
 check("se puede abrir una nueva", !secondError);
+
+console.log("\n→ limpieza");
+// This runs against the real account, so everything it made is removed. The
+// cascade on sessions takes the logged exercises and sets with it.
+const created = [session.id, second?.id].filter(Boolean) as string[];
+const { error: cleanupError } = await supabase.from("sessions").delete().in("id", created);
+check("sesiones de prueba borradas", !cleanupError, `${created.length} sesiones`);
+
+const { data: leftovers } = await supabase
+	.from("sessions")
+	.select("id")
+	.in("id", created);
+check("no quedó nada", (leftovers ?? []).length === 0);
 
 console.log("\n→ aislamiento");
 await supabase.auth.signOut();
@@ -170,7 +175,4 @@ const { error: forgedWrite } = await supabase
 	.insert({ user_id: userId as string });
 check("sin sesión no se escribe", forgedWrite !== null, forgedWrite?.code ?? "");
 
-console.log(
-	`\n${process.exitCode ? "hubo fallos" : "todo en verde"} — usuario de prueba ${email}`,
-);
-console.log("borralo desde Authentication > Users en el dashboard si te molesta.");
+console.log(`\n${process.exitCode ? "hubo fallos" : "todo en verde"}`);
