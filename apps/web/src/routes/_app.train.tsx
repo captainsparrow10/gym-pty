@@ -9,7 +9,7 @@ import { AppHeader, AppScroll } from "@/core/ui/app-frame";
 import {
 	bodyRegionsFor,
 	catalogMusclesFor,
-} from "@/features/catalog/muscle-map";
+} from "@/features/exercises/muscle-map";
 import {
 	PublicRoutineList,
 	RoutineList,
@@ -36,12 +36,22 @@ const COVERAGE: IExerciseData[] = exercises.flatMap((exercise) => {
 	return muscles.length > 0 ? [{ name: exercise.name, muscles }] : [];
 });
 
-/** Count of exercises per region, for the label under the model. */
-const COUNTS = new Map<Muscle, number>();
-for (const entry of COVERAGE) {
-	for (const muscle of entry.muscles) {
-		COUNTS.set(muscle, (COUNTS.get(muscle) ?? 0) + 1);
-	}
+/**
+ * Count of exercises per catalog muscle, for the list beside the model.
+ *
+ * Counted on the catalog vocabulary, not on the model's regions. Counting by
+ * region gets both numbers and labels wrong, because the two vocabularies do
+ * not line up one to one: "Core" shades both `abs` and `obliques`, so it
+ * appeared as two identical rows; and `quadriceps` is claimed by "Quads" and
+ * by "Legs" at once, so its row was labelled by whichever of the two came
+ * first in the catalog's own ordering, and its count was the sum of both.
+ */
+const COUNTS = new Map<string, number>();
+for (const exercise of exercises) {
+	COUNTS.set(
+		exercise.primaryMuscle,
+		(COUNTS.get(exercise.primaryMuscle) ?? 0) + 1,
+	);
 }
 
 // Five steps of orange, from barely-worked to heavily covered. Index in this
@@ -55,19 +65,32 @@ function TrainPage() {
 		routines = "mine",
 	} = Route.useSearch();
 	const navigate = useNavigate();
-	const [hovered, setHovered] = useState<Muscle | null>(null);
+	const [hovered, setHovered] = useState<string | null>(null);
 
-	const summary = useMemo(() => {
-		if (!hovered) return null;
-		const catalogMuscles = catalogMusclesFor(hovered);
-		if (catalogMuscles.length === 0) return null;
-		return { catalogMuscles, count: COUNTS.get(hovered) ?? 0 };
-	}, [hovered]);
+	const summary = useMemo(
+		() =>
+			hovered ? { muscle: hovered, count: COUNTS.get(hovered) ?? 0 } : null,
+		[hovered],
+	);
 
-	const openCatalog = (muscle: Muscle) => {
-		const catalogMuscles = catalogMusclesFor(muscle);
+	/** Catalog muscles, most-covered first. */
+	const ranked = useMemo(
+		() => [...COUNTS.entries()].sort((a, b) => b[1] - a[1]),
+		[],
+	);
+
+	const openMuscle = (catalogMuscle: string) =>
+		navigate({ to: "/exercises", search: { muscle: [catalogMuscle] } });
+
+	/**
+	 * A region on the model can stand for several catalog muscles — it has no
+	 * separate latissimus shape, so "Back" and "Lats" share one — which is why
+	 * the catalog filter takes a list rather than a single muscle.
+	 */
+	const openRegion = (region: Muscle) => {
+		const catalogMuscles = catalogMusclesFor(region);
 		if (catalogMuscles.length === 0) return;
-		navigate({ to: "/catalog", search: { muscle: catalogMuscles } });
+		navigate({ to: "/exercises", search: { muscle: catalogMuscles } });
 	};
 
 	return (
@@ -82,9 +105,12 @@ function TrainPage() {
 							search: (prev) => ({ ...prev, tab: value as "routines" | "map" }),
 						})
 					}
-					className="mb-4 lg:hidden"
+					className="lg:hidden"
 				>
-					<TabsList className="grid w-full grid-cols-2">
+					<TabsList
+						variant="line"
+						className="mb-6 grid h-auto w-full grid-cols-2"
+					>
 						<TabsTrigger value="routines" className="min-h-11">
 							Routines
 						</TabsTrigger>
@@ -100,7 +126,15 @@ function TrainPage() {
 				 * width, and hiding half a screen behind a tab on a monitor is just
 				 * wasted space.
 				 */}
-				<div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+				{/*
+				 * Routines take the majority and the body map a fixed column, rather
+				 * than an even split. AppScroll caps content at 5xl, so splitting
+				 * that in half left each side around 470px on a 1440px monitor —
+				 * phone width, which is exactly what the cards then looked like.
+				 * The map is a fixed-aspect figure and does not grow usefully past
+				 * its column; a list of routines does.
+				 */}
+				<div className="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
 					<div className={tab === "routines" ? "" : "hidden lg:block"}>
 						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
 							Routines
@@ -117,14 +151,30 @@ function TrainPage() {
 									}),
 								})
 							}
-							className="mb-4"
 						>
-							<TabsList className="grid w-full grid-cols-2">
+							{/*
+							 * "Mine" and "Community", not "Mine" and "Public". Each routine
+							 * already carries a Private/Public switch, so a tab called
+							 * Public made the same word mean two different things on the
+							 * same screen — one about who owns a routine, the other about
+							 * who can see it. Your own public routines live under Mine.
+							 *
+							 * The "line" variant, not the default filled one. The default
+							 * paints a solid track behind the tabs that read as a dark slab
+							 * cut in behind the cards — and worse, its active trigger takes
+							 * a visible border while the inactive one keeps a transparent
+							 * one, so the two tabs were never the same shape. An underline
+							 * marks the active tab without giving either of them a box.
+							 */}
+							<TabsList
+								variant="line"
+								className="mb-6 grid h-auto w-full grid-cols-2"
+							>
 								<TabsTrigger value="mine" className="min-h-11">
 									Mine
 								</TabsTrigger>
 								<TabsTrigger value="public" className="min-h-11">
-									Public
+									Community
 								</TabsTrigger>
 							</TabsList>
 						</Tabs>
@@ -162,7 +212,7 @@ function TrainPage() {
 								bodyColor="var(--color-muted)"
 								highlightedColors={HEAT}
 								onClick={(stats) => {
-									if ("muscle" in stats) openCatalog(stats.muscle);
+									if ("muscle" in stats) openRegion(stats.muscle);
 								}}
 								svgStyle={{ width: "100%", cursor: "pointer" }}
 							/>
@@ -170,9 +220,7 @@ function TrainPage() {
 
 						{summary ? (
 							<p className="mt-3 text-center text-sm">
-								<span className="font-medium">
-									{summary.catalogMuscles.join(" · ")}
-								</span>{" "}
+								<span className="font-medium">{summary.muscle}</span>{" "}
 								<span className="text-muted-foreground">
 									— {summary.count} exercises
 								</span>
@@ -192,27 +240,24 @@ function TrainPage() {
 							By area
 						</h2>
 						<ul className="grid grid-cols-2 gap-2">
-							{[...COUNTS.entries()]
-								.sort((a, b) => b[1] - a[1])
-								.map(([muscle, count]) => (
-									<li key={muscle}>
-										<button
-											type="button"
-											onClick={() => openCatalog(muscle)}
-											onFocus={() => setHovered(muscle)}
-											onMouseEnter={() => setHovered(muscle)}
-											onMouseLeave={() => setHovered(null)}
-											className="flex min-h-11 w-full items-center justify-between rounded-lg border bg-card px-3 text-left text-sm transition-colors hover:border-primary"
-										>
-											<span className="truncate">
-												{catalogMusclesFor(muscle)[0]}
-											</span>
-											<span className="ml-2 shrink-0 text-muted-foreground">
-												{count}
-											</span>
-										</button>
-									</li>
-								))}
+							{ranked.map(([muscle, count]) => (
+								<li key={muscle}>
+									<button
+										type="button"
+										onClick={() => openMuscle(muscle)}
+										onFocus={() => setHovered(muscle)}
+										onBlur={() => setHovered(null)}
+										onMouseEnter={() => setHovered(muscle)}
+										onMouseLeave={() => setHovered(null)}
+										className="flex min-h-11 w-full items-center justify-between rounded-lg border bg-card px-3 text-left text-sm transition-colors hover:border-primary"
+									>
+										<span className="truncate">{muscle}</span>
+										<span className="ml-2 shrink-0 tabular-nums text-muted-foreground">
+											{count}
+										</span>
+									</button>
+								</li>
+							))}
 						</ul>
 					</div>
 				</div>

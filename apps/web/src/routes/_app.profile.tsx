@@ -1,3 +1,4 @@
+import { formatDuration } from "@gym/shared/domain";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
@@ -35,6 +36,7 @@ import {
 	useSetPublicProfile,
 	useUpdateAvatar,
 	useUpdateDisplayName,
+	useUpdateRestSeconds,
 } from "@/features/profile/queries";
 import { cn } from "@/lib/utils";
 
@@ -60,15 +62,32 @@ function ProfilePage() {
 	return (
 		<>
 			<AppHeader title="Profile" />
-			<AppScroll className="space-y-6">
-				<IdentitySection
-					displayName={profile.displayName}
-					icon={profile.avatarIcon}
-					color={profile.avatarColor}
-				/>
-				<AvatarSection icon={profile.avatarIcon} color={profile.avatarColor} />
-				<LeaderboardSection publicProfile={profile.publicProfile} />
-				<AccountSection />
+			{/*
+			 * Two columns of cards from lg, rather than one column of full-width
+			 * fields. A settings input 1280px wide is harder to scan than a short
+			 * one, but the fix is the card being narrow, not the page — the page
+			 * keeps the same edges as every other screen.
+			 *
+			 * `items-start` so a short card does not stretch to match a tall one
+			 * beside it, and the columns stay two independent stacks.
+			 */}
+			<AppScroll className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+				<div className="space-y-6">
+					<IdentitySection
+						displayName={profile.displayName}
+						icon={profile.avatarIcon}
+						color={profile.avatarColor}
+					/>
+					<AvatarSection
+						icon={profile.avatarIcon}
+						color={profile.avatarColor}
+					/>
+				</div>
+				<div className="space-y-6">
+					<RestSection restSeconds={profile.restSeconds} />
+					<LeaderboardSection publicProfile={profile.publicProfile} />
+					<AccountSection />
+				</div>
 			</AppScroll>
 		</>
 	);
@@ -189,6 +208,42 @@ function AvatarSection({
 					})}
 				</div>
 			</fieldset>
+		</section>
+	);
+}
+
+/**
+ * How long the rest timer runs when the plan does not say.
+ *
+ * Fixed choices rather than a free number field: rest is picked from a handful
+ * of values in practice, and a spinner for "how about 97 seconds" is a worse
+ * control than five buttons.
+ */
+function RestSection({ restSeconds }: { restSeconds: number }) {
+	const update = useUpdateRestSeconds();
+
+	return (
+		<section className="rounded-xl border bg-card p-4">
+			<h2 className="mb-1 font-display text-lg font-semibold uppercase tracking-wide">
+				Rest between sets
+			</h2>
+			<p className="mb-3 text-sm text-muted-foreground">
+				Used when a routine does not set its own. A single exercise can still
+				override it.
+			</p>
+			<div className="flex flex-wrap gap-2">
+				{[45, 60, 90, 120, 180].map((option) => (
+					<Button
+						key={option}
+						variant={restSeconds === option ? "default" : "outline"}
+						className="h-11 tabular-nums"
+						disabled={update.isPending}
+						onClick={() => update.mutate(option)}
+					>
+						{formatDuration(option)}
+					</Button>
+				))}
+			</div>
 		</section>
 	);
 }

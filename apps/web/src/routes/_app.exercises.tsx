@@ -6,15 +6,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AppHeader } from "@/core/ui/app-frame";
-import { ExerciseArt } from "@/features/catalog/exercise-art";
+import { AppHeader, CONTENT_WIDTH } from "@/core/ui/app-frame";
+import { ExerciseArt } from "@/features/exercises/exercise-art";
 import {
 	ActiveFilters,
 	activeFilterCount,
 	FilterSheet,
 	type Filters,
 	toggleValue,
-} from "@/features/catalog/filter-sheet";
+} from "@/features/exercises/filter-sheet";
+import { cn } from "@/lib/utils";
 
 /**
  * Filters live in the URL, not in component state, so a filtered view can be
@@ -31,9 +32,9 @@ const searchSchema = z.object({
 	type: z.array(z.string()).optional(),
 });
 
-export const Route = createFileRoute("/_app/catalog")({
+export const Route = createFileRoute("/_app/exercises")({
 	validateSearch: searchSchema,
-	component: CatalogPage,
+	component: ExercisesPage,
 });
 
 /** Pre-normalized haystack per exercise, built once at module load. */
@@ -77,7 +78,7 @@ function useLaneCount() {
 	return lanes;
 }
 
-function CatalogPage() {
+function ExercisesPage() {
 	const { q = "", equipment, muscle, type } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -127,56 +128,66 @@ function CatalogPage() {
 		<>
 			<AppHeader title="Exercises" />
 
-			<div className="space-y-3 border-b px-4 py-3 lg:px-8">
-				<div className="flex gap-2">
-					<div className="relative flex-1">
-						<Search
-							className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-							aria-hidden
-						/>
-						<Input
-							type="search"
-							value={q}
-							onChange={(event) =>
-								setFilter({ q: event.target.value || undefined })
-							}
-							placeholder="Search exercises…"
-							aria-label="Search exercises"
-							className="h-11 pl-9"
+			{/* The rule spans the viewport, the controls inside it sit on the same
+			    left edge as the list below and the title above. */}
+			<div className="border-b">
+				<div className={cn("space-y-3 px-4 py-3 lg:px-8", CONTENT_WIDTH)}>
+					<div className="flex gap-2">
+						<div className="relative flex-1">
+							<Search
+								className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+								aria-hidden
+							/>
+							<Input
+								type="search"
+								value={q}
+								onChange={(event) =>
+									setFilter({ q: event.target.value || undefined })
+								}
+								placeholder="Search exercises…"
+								aria-label="Search exercises"
+								className="h-11 pl-9"
+							/>
+						</div>
+
+						<FilterSheet
+							filters={filters}
+							onToggle={toggleFilter}
+							onClear={() => navigate({ search: (prev) => ({ q: prev.q }) })}
+							resultCount={results.length}
 						/>
 					</div>
 
-					<FilterSheet
-						filters={filters}
-						onToggle={toggleFilter}
-						onClear={() => navigate({ search: (prev) => ({ q: prev.q }) })}
-						resultCount={results.length}
-					/>
-				</div>
+					<ActiveFilters filters={filters} onToggle={toggleFilter} />
 
-				<ActiveFilters filters={filters} onToggle={toggleFilter} />
-
-				<div className="flex items-center justify-between">
-					<p className="text-sm text-muted-foreground">
-						{results.length} of {exercises.length}
-					</p>
-					{hasFilters && (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => navigate({ search: {} })}
-							className="h-8"
-						>
-							<X className="size-3.5" aria-hidden />
-							Clear all
-						</Button>
-					)}
+					<div className="flex items-center justify-between">
+						<p className="text-sm text-muted-foreground">
+							{results.length} of {exercises.length}
+						</p>
+						{hasFilters && (
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => navigate({ search: {} })}
+								className="h-8"
+							>
+								<X className="size-3.5" aria-hidden />
+								Clear all
+							</Button>
+						)}
+					</div>
 				</div>
 			</div>
 
 			<div
 				ref={scrollRef}
-				className="flex-1 overflow-y-auto px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-2 lg:px-8 lg:pb-10"
+				// This is the virtualizer's scroll element, so the cap goes on it
+				// rather than on an inner wrapper: measuring a child would give the
+				// rows the viewport width and the list would size to the wrong one.
+				className={cn(
+					"min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-2 lg:px-8 lg:pb-10",
+					CONTENT_WIDTH,
+				)}
 			>
 				{results.length === 0 ? (
 					<p className="py-12 text-center text-muted-foreground">
@@ -224,7 +235,7 @@ function ExerciseRow({
 }) {
 	return (
 		<Link
-			to="/catalog/$slug"
+			to="/exercises/$slug"
 			params={{ slug }}
 			className="flex h-20 items-center gap-3 rounded-xl border bg-card px-3 transition-colors hover:border-primary"
 		>
