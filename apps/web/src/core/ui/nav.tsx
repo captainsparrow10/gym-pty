@@ -38,7 +38,7 @@ const SIDEBAR: Destination[] = [
 	...TAB_BAR.slice(4),
 ];
 
-/** `exact` only on the index, so /catalog/squat still lights up Ejercicios. */
+/** `exact` only on the index, so /catalog/squat still lights up Exercises. */
 const activeOptions = (to: string) => ({ exact: to === "/" });
 
 /**

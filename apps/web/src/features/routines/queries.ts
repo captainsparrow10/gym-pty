@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { reorderPositions } from "@/core/api/reorder";
 import { supabase } from "@/core/api/supabase";
 import { activeSessionKey } from "@/features/session/queries";
 
@@ -234,41 +235,6 @@ export function useRemoveRoutineExercise() {
 }
 
 /**
- * Reorders one exercise within a routine.
- *
- * `(routine_id, position)` is unique, so a straight swap would collide on the
- * first update. Both rows are parked on negative positions first, which no real
- * row ever uses, and then written to their final values.
- */
-export function useSwapRoutineExercises() {
-	const refresh = useRefresh();
-
-	return useMutation({
-		mutationFn: async ({
-			a,
-			b,
-		}: {
-			a: { id: string; position: number };
-			b: { id: string; position: number };
-		}) => {
-			const park = async (id: string, position: number) => {
-				const { error } = await supabase
-					.from("routine_exercises")
-					.update({ position })
-					.eq("id", id);
-				if (error) throw error;
-			};
-
-			await park(a.id, -1);
-			await park(b.id, -2);
-			await park(a.id, b.position);
-			await park(b.id, a.position);
-		},
-		onSuccess: refresh,
-	});
-}
-
-/**
  * Opens a session preloaded with a routine's exercises.
  *
  * Written as one mutation rather than a start-then-add-each loop so a failure
@@ -319,5 +285,16 @@ export function useStartFromRoutine() {
 		},
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: activeSessionKey }),
+	});
+}
+
+/** Rewrites the order of exercises within a routine. */
+export function useReorderRoutineExercises() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: (orderedIds: string[]) =>
+			reorderPositions("routine_exercises", orderedIds),
+		onSuccess: refresh,
 	});
 }

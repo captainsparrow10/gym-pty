@@ -1,5 +1,6 @@
 import type { LoggedSet } from "@gym/shared/domain";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { reorderPositions } from "@/core/api/reorder";
 import { supabase } from "@/core/api/supabase";
 
 export const activeSessionKey = ["session", "active"] as const;
@@ -327,6 +328,17 @@ export function useAddToSession() {
 
 			return { sessionId: sessionId as string, added: true };
 		},
+		onSuccess: refresh,
+	});
+}
+
+/** Rewrites the order of exercises within the active session. */
+export function useReorderSessionExercises() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: (orderedIds: string[]) =>
+			reorderPositions("logged_exercises", orderedIds),
 		onSuccess: refresh,
 	});
 }

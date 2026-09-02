@@ -1,10 +1,11 @@
 import { exercises } from "@gym/shared/catalog";
 import { formatDuration, formatKg } from "@gym/shared/domain";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Play, Plus, Star, Trash2 } from "lucide-react";
+import { Play, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SortableItem, SortableList } from "@/core/ui/sortable";
 import { ExercisePicker } from "@/features/session/exercise-picker";
 import { useActiveSession } from "@/features/session/queries";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,10 @@ import {
 	useDeleteRoutine,
 	useRateRoutine,
 	useRemoveRoutineExercise,
+	useReorderRoutineExercises,
 	useRoutineStats,
 	useRoutines,
 	useStartFromRoutine,
-	useSwapRoutineExercises,
 } from "./queries";
 
 const NAMES = new Map(
@@ -94,7 +95,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 	const { data: activeSession } = useActiveSession();
 	const addExercise = useAddRoutineExercise();
 	const removeExercise = useRemoveRoutineExercise();
-	const swap = useSwapRoutineExercises();
+	const reorder = useReorderRoutineExercises();
 	const remove = useDeleteRoutine();
 	const start = useStartFromRoutine();
 	const [expanded, setExpanded] = useState(false);
@@ -161,68 +162,39 @@ function RoutineCard({ routine }: { routine: Routine }) {
 			{expanded && (
 				<div className="border-t">
 					{routine.exercises.length > 0 && (
-						<ol className="divide-y">
-							{routine.exercises.map((exercise, index) => (
-								<li
-									key={exercise.id}
-									className="flex items-center gap-1 px-3 py-2"
-								>
-									<span className="min-w-0 flex-1 truncate text-sm">
-										{NAMES.get(exercise.slug) ?? exercise.slug}
-									</span>
-
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-9 shrink-0 text-muted-foreground"
-										disabled={index === 0 || swap.isPending}
-										aria-label={`Move ${NAMES.get(exercise.slug) ?? exercise.slug} up`}
-										onClick={() =>
-											swap.mutate({
-												a: { id: exercise.id, position: exercise.position },
-												b: {
-													id: routine.exercises[index - 1].id,
-													position: routine.exercises[index - 1].position,
-												},
-											})
-										}
-									>
-										<ChevronUp className="size-4" aria-hidden />
-									</Button>
-
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-9 shrink-0 text-muted-foreground"
-										disabled={
-											index === routine.exercises.length - 1 || swap.isPending
-										}
-										aria-label={`Move ${NAMES.get(exercise.slug) ?? exercise.slug} down`}
-										onClick={() =>
-											swap.mutate({
-												a: { id: exercise.id, position: exercise.position },
-												b: {
-													id: routine.exercises[index + 1].id,
-													position: routine.exercises[index + 1].position,
-												},
-											})
-										}
-									>
-										<ChevronDown className="size-4" aria-hidden />
-									</Button>
-
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-9 shrink-0 text-muted-foreground"
-										aria-label={`Remove ${NAMES.get(exercise.slug) ?? exercise.slug}`}
-										onClick={() => removeExercise.mutate(exercise.id)}
-									>
-										<Trash2 className="size-3.5" aria-hidden />
-									</Button>
-								</li>
-							))}
-						</ol>
+						<SortableList
+							items={routine.exercises}
+							onReorder={(next) =>
+								reorder.mutate(next.map((exercise) => exercise.id))
+							}
+							className="divide-y"
+						>
+							{(exercise) => (
+								<SortableItem key={exercise.id} id={exercise.id}>
+									{(handle) => (
+										<div className="flex items-center gap-1 bg-card pr-2">
+											{routine.exercises.length > 1 ? (
+												handle
+											) : (
+												<span className="w-3" />
+											)}
+											<span className="min-w-0 flex-1 truncate py-2 text-sm">
+												{NAMES.get(exercise.slug) ?? exercise.slug}
+											</span>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-9 shrink-0 text-muted-foreground"
+												aria-label={`Remove ${NAMES.get(exercise.slug) ?? exercise.slug}`}
+												onClick={() => removeExercise.mutate(exercise.id)}
+											>
+												<Trash2 className="size-3.5" aria-hidden />
+											</Button>
+										</div>
+									)}
+								</SortableItem>
+							)}
+						</SortableList>
 					)}
 
 					<div className="flex gap-2 border-t p-3">
@@ -239,7 +211,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 						>
 							<Button variant="outline" className="h-11 flex-1">
 								<Plus className="size-4" aria-hidden />
-								Agregar
+								Add
 							</Button>
 						</ExercisePicker>
 

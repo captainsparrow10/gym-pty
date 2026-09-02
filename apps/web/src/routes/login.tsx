@@ -139,7 +139,7 @@ function LoginPage() {
 							? "Un momento…"
 							: mode === "signin"
 								? "Entrar"
-								: "Crear cuenta"}
+								: "Create account"}
 					</Button>
 				</form>
 

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppHeader, AppScroll } from "@/core/ui/app-frame";
+import { SortableItem, SortableList } from "@/core/ui/sortable";
 import { ExerciseArt } from "@/features/catalog/exercise-art";
 import { ExercisePicker } from "@/features/session/exercise-picker";
 import {
@@ -23,6 +24,7 @@ import {
 	useLastPerformance,
 	useLogSet,
 	useRemoveExercise,
+	useReorderSessionExercises,
 	useStartSession,
 } from "@/features/session/queries";
 import { RestTimer } from "@/features/session/rest-timer";
@@ -47,6 +49,7 @@ function SessionPage() {
 	const finish = useFinishSession();
 	const discard = useDiscardSession();
 	const addExercise = useAddExercise();
+	const reorder = useReorderSessionExercises();
 	const [resting, setResting] = useState(false);
 
 	// Held for the whole session, not just the rest countdown: the screen going
@@ -108,7 +111,7 @@ function SessionPage() {
 						{setCount > 0 ? (
 							<>
 								<Check className="size-4" aria-hidden />
-								Terminar
+								Finish
 							</>
 						) : (
 							"Discard"
@@ -129,30 +132,53 @@ function SessionPage() {
 				 * they tile without losing any ordering the user relies on — the
 				 * numbered sets live inside each card.
 				 */}
-				<div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-					{session.exercises.map((exercise) => (
-						<ExerciseCard
-							key={exercise.id}
-							exercise={exercise}
-							onLogged={() => setResting(true)}
-						/>
-					))}
-				</div>
-
-				<ExercisePicker
-					onPick={(slug) =>
-						addExercise.mutate({
-							sessionId: session.id,
-							slug,
-							position: session.exercises.length,
-						})
+				{/*
+				 * The add button lives inside the grid rather than under it. With one
+				 * exercise on a wide screen the second column was simply empty; giving
+				 * it the add affordance fills the gap with the thing you would reach
+				 * for next anyway.
+				 */}
+				{/*
+				 * The add button is the grid's footer rather than a block underneath.
+				 * With an odd number of cards the last row had a hole in it; filling
+				 * that hole with the thing you would reach for next is better than
+				 * leaving the space empty or dropping to one column.
+				 */}
+				<SortableList
+					items={session.exercises}
+					onReorder={(next) =>
+						reorder.mutate(next.map((exercise) => exercise.id))
+					}
+					className="grid gap-4 lg:grid-cols-2 lg:items-start"
+					footer={
+						<ExercisePicker
+							onPick={(slug) =>
+								addExercise.mutate({
+									sessionId: session.id,
+									slug,
+									position: session.exercises.length,
+								})
+							}
+						>
+							<Button variant="outline" className="h-12 w-full">
+								<Plus className="size-4" aria-hidden />
+								Add exercise
+							</Button>
+						</ExercisePicker>
 					}
 				>
-					<Button variant="outline" className="h-12 w-full">
-						<Plus className="size-4" aria-hidden />
-						Agregar ejercicio
-					</Button>
-				</ExercisePicker>
+					{(exercise) => (
+						<SortableItem key={exercise.id} id={exercise.id}>
+							{(handle) => (
+								<ExerciseCard
+									exercise={exercise}
+									handle={session.exercises.length > 1 ? handle : null}
+									onLogged={() => setResting(true)}
+								/>
+							)}
+						</SortableItem>
+					)}
+				</SortableList>
 
 				{/*
 				 * Only shown when the browser refused the lock, and phrased as what it
@@ -179,9 +205,12 @@ function SessionPage() {
 function ExerciseCard({
 	exercise,
 	onLogged,
+	handle,
 }: {
 	exercise: SessionExercise;
 	onLogged: () => void;
+	/** Drag handle, or null when there is nothing to reorder. */
+	handle?: React.ReactNode;
 }) {
 	const logSet = useLogSet();
 	const deleteSet = useDeleteSet();
@@ -226,6 +255,7 @@ function ExerciseCard({
 	return (
 		<section className="rounded-xl border bg-card">
 			<header className="flex items-center gap-3 border-b p-3">
+				{handle}
 				<ExerciseArt
 					slug={exercise.slug}
 					className="size-11 shrink-0 border-0 bg-transparent"
@@ -322,7 +352,7 @@ function ExerciseCard({
 					{oneRm > 0 && <span>Est. 1RM {formatKg(oneRm)} kg</span>}
 					{last && last.length > 0 && (
 						<span>
-							Última vez:{" "}
+							Last time:{" "}
 							{last.map((s) => `${s.reps}×${formatKg(s.weightKg)}`).join(", ")}
 						</span>
 					)}

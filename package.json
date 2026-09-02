@@ -15,7 +15,8 @@
     "smoke:session": "node scripts/smoke-session.ts",
     "smoke:routines": "node scripts/smoke-routines.ts",
     "smoke:add": "node scripts/smoke-add-to-session.ts",
-    "smoke:rankings": "node scripts/smoke-rankings.ts"
+    "smoke:rankings": "node scripts/smoke-rankings.ts",
+    "smoke:reorder": "node scripts/smoke-reorder.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.114.0"
