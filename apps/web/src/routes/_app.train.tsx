@@ -64,7 +64,7 @@ function TrainPage() {
 
 	return (
 		<>
-			<AppHeader title="Entrenar" />
+			<AppHeader title="Train" />
 			<AppScroll>
 				<Tabs
 					value={tab}
@@ -78,10 +78,10 @@ function TrainPage() {
 				>
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="routines" className="min-h-11">
-							Rutinas
+							Routines
 						</TabsTrigger>
 						<TabsTrigger value="map" className="min-h-11">
-							Por músculo
+							By muscle
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
@@ -95,17 +95,17 @@ function TrainPage() {
 				<div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
 					<div className={tab === "routines" ? "" : "hidden lg:block"}>
 						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
-							Rutinas
+							Routines
 						</h2>
 						<RoutineList />
 					</div>
 
 					<div className={tab === "map" ? "mt-0" : "hidden lg:block"}>
 						<h2 className="mb-3 hidden font-display text-lg font-semibold uppercase tracking-wide lg:block">
-							Mapa corporal
+							Body map
 						</h2>
 						<p className="mb-4 text-sm text-muted-foreground">
-							Tocá un músculo para ver sus ejercicios.
+							Tap a muscle to see its exercises.
 						</p>
 
 						<div className="mb-4 grid grid-cols-2 gap-2">
@@ -118,7 +118,7 @@ function TrainPage() {
 									}
 									className="h-11"
 								>
-									{option === "anterior" ? "Frente" : "Espalda"}
+									{option === "anterior" ? "Front" : "Back"}
 								</Button>
 							))}
 						</div>
@@ -142,12 +142,12 @@ function TrainPage() {
 									{summary.catalogMuscles.join(" · ")}
 								</span>{" "}
 								<span className="text-muted-foreground">
-									— {summary.count} ejercicios
+									— {summary.count} exercises
 								</span>
 							</p>
 						) : (
 							<p className="mt-3 text-center text-sm text-muted-foreground">
-								El tono indica cuántos ejercicios cubre cada zona.
+								Shading shows how many exercises cover each area.
 							</p>
 						)}
 
@@ -157,7 +157,7 @@ function TrainPage() {
 						 * decorative legend.
 						 */}
 						<h2 className="mt-6 mb-2 font-display text-lg font-semibold uppercase tracking-wide">
-							Por zona
+							By area
 						</h2>
 						<ul className="grid grid-cols-2 gap-2">
 							{[...COUNTS.entries()]

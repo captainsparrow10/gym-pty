@@ -40,7 +40,7 @@ function AppLayout() {
 						className="size-8 animate-pulse text-muted-foreground"
 						aria-hidden
 					/>
-					<p className="sr-only">Cargando</p>
+					<p className="sr-only">Loading</p>
 				</div>
 			</AppFrame>
 		);

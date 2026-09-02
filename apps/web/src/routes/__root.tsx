@@ -44,7 +44,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		// Dark is the default theme; the class is what the `dark:` variant keys off.
-		<html lang="es" className="dark">
+		<html lang="en" className="dark">
 			<head>
 				<HeadContent />
 			</head>

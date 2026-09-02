@@ -118,7 +118,7 @@ export function RestTimer({ seconds, onDismiss }: Props) {
 			<div className="flex items-center gap-3">
 				<div className="flex-1">
 					<p className="text-xs uppercase tracking-wide text-muted-foreground">
-						{done ? "Descanso terminado" : "Descanso"}
+						{done ? "Rest complete" : "Rest"}
 					</p>
 					{/*
 					 * Only the readout is a live region, and only once it finishes:
@@ -157,7 +157,7 @@ export function RestTimer({ seconds, onDismiss }: Props) {
 					variant="outline"
 					size="icon"
 					onClick={() => (done ? reset() : setPaused(!paused))}
-					aria-label={done ? "Reiniciar" : paused ? "Reanudar" : "Pausar"}
+					aria-label={done ? "Restart" : paused ? "Resume" : "Pause"}
 					className="size-11"
 				>
 					{done ? (
@@ -173,7 +173,7 @@ export function RestTimer({ seconds, onDismiss }: Props) {
 					variant="ghost"
 					size="icon"
 					onClick={onDismiss}
-					aria-label="Cerrar el descanso"
+					aria-label="Dismiss rest timer"
 					className="size-11"
 				>
 					<X className="size-4" aria-hidden />

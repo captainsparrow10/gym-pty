@@ -1,17 +1,21 @@
 import { exercises } from "@gym/shared/catalog";
+import { formatDuration, formatKg } from "@gym/shared/domain";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Play, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Play, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExercisePicker } from "@/features/session/exercise-picker";
 import { useActiveSession } from "@/features/session/queries";
+import { cn } from "@/lib/utils";
 import {
 	type Routine,
 	useAddRoutineExercise,
 	useCreateRoutine,
 	useDeleteRoutine,
+	useRateRoutine,
 	useRemoveRoutineExercise,
+	useRoutineStats,
 	useRoutines,
 	useStartFromRoutine,
 	useSwapRoutineExercises,
@@ -45,7 +49,7 @@ export function RoutineList() {
 		<div className="space-y-4">
 			{routines?.length === 0 && (
 				<p className="py-6 text-center text-muted-foreground">
-					Todavía no tenés rutinas. Creá una abajo.
+					No routines yet. Create one below.
 				</p>
 			)}
 
@@ -61,13 +65,13 @@ export function RoutineList() {
 				className="flex gap-2"
 			>
 				<label htmlFor="new-routine" className="sr-only">
-					Nombre de la rutina
+					Routine name
 				</label>
 				<Input
 					id="new-routine"
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					placeholder="Empuje, Pierna, Full body…"
+					placeholder="Push, Legs, Full body…"
 					className="h-12"
 				/>
 				<Button
@@ -76,7 +80,7 @@ export function RoutineList() {
 					className="h-12 shrink-0"
 				>
 					<Plus className="size-4" aria-hidden />
-					Crear
+					Create
 				</Button>
 			</form>
 		</div>
@@ -85,6 +89,8 @@ export function RoutineList() {
 
 function RoutineCard({ routine }: { routine: Routine }) {
 	const navigate = useNavigate();
+	const { data: allStats } = useRoutineStats();
+	const stats = allStats?.get(routine.id);
 	const { data: activeSession } = useActiveSession();
 	const addExercise = useAddRoutineExercise();
 	const removeExercise = useRemoveRoutineExercise();
@@ -108,7 +114,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 					<h3 className="truncate font-medium">{routine.name}</h3>
 					<p className="text-sm text-muted-foreground">
 						{routine.exercises.length === 0
-							? "Sin ejercicios"
+							? "No exercises"
 							: `${routine.exercises.length} ejercicios`}
 					</p>
 				</button>
@@ -120,16 +126,35 @@ function RoutineCard({ routine }: { routine: Routine }) {
 					onClick={startRoutine}
 					// An open session would be replaced, and the one-open-session index
 					// would reject the insert anyway, so the reason is stated up front.
-					title={activeSession ? "Ya tenés una sesión abierta" : undefined}
+					title={
+						activeSession ? "You already have a session in progress" : undefined
+					}
 				>
 					<Play className="size-4" aria-hidden />
-					Empezar
+					Start
 				</Button>
 			</header>
 
+			{/*
+			 * Rating and history sit outside the collapsed state: they are the
+			 * reason to open a routine at all, so hiding them behind the toggle
+			 * would defeat the point.
+			 */}
+			<div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-3 py-2">
+				<Rating routine={routine} />
+				{stats ? (
+					<p className="text-xs text-muted-foreground">
+						Last {stats.lastPerformed} · avg {formatKg(stats.averageVolumeKg)}{" "}
+						kg · {formatDuration(stats.averageDurationSec)}
+					</p>
+				) : (
+					<p className="text-xs text-muted-foreground">Not performed yet</p>
+				)}
+			</div>
+
 			{activeSession && routine.exercises.length > 0 && (
 				<p className="border-t px-3 py-2 text-xs text-muted-foreground">
-					Terminá la sesión abierta antes de empezar esta rutina.
+					Finish the session in progress before starting this routine.
 				</p>
 			)}
 
@@ -151,7 +176,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 										size="icon"
 										className="size-9 shrink-0 text-muted-foreground"
 										disabled={index === 0 || swap.isPending}
-										aria-label={`Subir ${NAMES.get(exercise.slug) ?? exercise.slug}`}
+										aria-label={`Move ${NAMES.get(exercise.slug) ?? exercise.slug} up`}
 										onClick={() =>
 											swap.mutate({
 												a: { id: exercise.id, position: exercise.position },
@@ -172,7 +197,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 										disabled={
 											index === routine.exercises.length - 1 || swap.isPending
 										}
-										aria-label={`Bajar ${NAMES.get(exercise.slug) ?? exercise.slug}`}
+										aria-label={`Move ${NAMES.get(exercise.slug) ?? exercise.slug} down`}
 										onClick={() =>
 											swap.mutate({
 												a: { id: exercise.id, position: exercise.position },
@@ -190,7 +215,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 										variant="ghost"
 										size="icon"
 										className="size-9 shrink-0 text-muted-foreground"
-										aria-label={`Quitar ${NAMES.get(exercise.slug) ?? exercise.slug}`}
+										aria-label={`Remove ${NAMES.get(exercise.slug) ?? exercise.slug}`}
 										onClick={() => removeExercise.mutate(exercise.id)}
 									>
 										<Trash2 className="size-3.5" aria-hidden />
@@ -224,11 +249,61 @@ function RoutineCard({ routine }: { routine: Routine }) {
 							onClick={() => remove.mutate(routine.id)}
 						>
 							<Trash2 className="size-4" aria-hidden />
-							Borrar rutina
+							Delete routine
 						</Button>
 					</div>
 				</div>
 			)}
 		</section>
+	);
+}
+
+/**
+ * Five-star self rating.
+ *
+ * Real radio inputs, visually hidden behind the star icons, rather than buttons
+ * carrying `role="radio"`. These are mutually exclusive values in a group and
+ * the platform already has an element that says so — with arrow-key navigation
+ * and correct announcement for free.
+ *
+ * Clicking the current rating clears it. Unrated is a real state, distinct from
+ * a low rating, and a radio group has no other way back to it.
+ */
+function Rating({ routine }: { routine: Routine }) {
+	const rate = useRateRoutine();
+	const value = routine.rating ?? 0;
+
+	return (
+		<fieldset className="flex items-center gap-0.5">
+			<legend className="sr-only">Rating for {routine.name}</legend>
+			{[1, 2, 3, 4, 5].map((star) => (
+				<label
+					key={star}
+					className="flex size-8 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-primary has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring"
+				>
+					<input
+						type="radio"
+						name={`rating-${routine.id}`}
+						value={star}
+						checked={value === star}
+						onChange={() => rate.mutate({ id: routine.id, rating: star })}
+						onClick={() => {
+							if (value === star) rate.mutate({ id: routine.id, rating: null });
+						}}
+						className="sr-only"
+					/>
+					<span className="sr-only">
+						{star} {star === 1 ? "star" : "stars"}
+					</span>
+					<Star
+						className={cn(
+							"size-4",
+							star <= value && "fill-primary text-primary",
+						)}
+						aria-hidden
+					/>
+				</label>
+			))}
+		</fieldset>
 	);
 }

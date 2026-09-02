@@ -129,7 +129,7 @@ export function ExerciseArt({ slug, live = false, className, name }: Props) {
 					className="size-full text-foreground"
 					role="img"
 					aria-label={
-						name ? `Ilustración de ${name}` : "Ilustración del ejercicio"
+						name ? `Illustration of ${name}` : "Exercise illustration"
 					}
 				>
 					{/*

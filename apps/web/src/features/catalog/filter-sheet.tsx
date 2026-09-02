@@ -21,11 +21,11 @@ export type Filters = {
 
 /** Spanish labels for the logging types, which are English slugs in the data. */
 export const TYPE_LABELS: Record<string, string> = {
-	weight_reps: "Peso y reps",
-	bodyweight_reps: "Peso corporal",
-	assisted_bodyweight: "Asistido",
-	duration: "Por tiempo",
-	distance_duration: "Distancia y tiempo",
+	weight_reps: "Weight & reps",
+	bodyweight_reps: "Bodyweight",
+	assisted_bodyweight: "Assisted",
+	duration: "Timed",
+	distance_duration: "Distance & time",
 };
 
 export const TYPES = [
@@ -94,7 +94,7 @@ export function FilterSheet({
 			<DrawerTrigger asChild>
 				<Button variant="outline" className="h-11 shrink-0">
 					<SlidersHorizontal className="size-4" aria-hidden />
-					Filtros
+					Filters
 					{active > 0 && (
 						<Badge variant="secondary" className="ml-1 tabular-nums">
 							{active}
@@ -106,27 +106,27 @@ export function FilterSheet({
 			<DrawerContent className="max-h-[88dvh]">
 				<DrawerHeader className="text-left">
 					<DrawerTitle className="font-display uppercase tracking-wide">
-						Filtros
+						Filters
 					</DrawerTitle>
 				</DrawerHeader>
 
 				<div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
 					<Group
-						title="Músculo"
+						title="Muscle"
 						options={MUSCLES}
 						counts={MUSCLE_COUNTS}
 						selected={filters.muscle}
 						onToggle={(value) => onToggle("muscle", value)}
 					/>
 					<Group
-						title="Equipo"
+						title="Equipment"
 						options={EQUIPMENT}
 						counts={EQUIPMENT_COUNTS}
 						selected={filters.equipment}
 						onToggle={(value) => onToggle("equipment", value)}
 					/>
 					<Group
-						title="Tipo"
+						title="Type"
 						options={TYPES}
 						counts={TYPE_COUNTS}
 						label={(value) => TYPE_LABELS[value] ?? value}
@@ -143,11 +143,11 @@ export function FilterSheet({
 						disabled={active === 0}
 					>
 						<X className="size-4" aria-hidden />
-						Limpiar
+						Clear
 					</Button>
 					<DrawerClose asChild>
 						<Button className="h-12 flex-1">
-							Ver {resultCount} {resultCount === 1 ? "ejercicio" : "ejercicios"}
+							Show {resultCount} {resultCount === 1 ? "exercise" : "exercises"}
 						</Button>
 					</DrawerClose>
 				</DrawerFooter>
@@ -241,7 +241,7 @@ export function ActiveFilters({
 					key={`${group}-${value}`}
 					type="button"
 					onClick={() => onToggle(group, value)}
-					aria-label={`Quitar filtro ${value}`}
+					aria-label={`Remove ${value} filter`}
 					className="flex min-h-8 items-center gap-1 rounded-full bg-primary px-3 text-sm text-primary-foreground"
 				>
 					{group === "type" ? (TYPE_LABELS[value] ?? value) : value}

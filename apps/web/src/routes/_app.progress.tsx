@@ -1,6 +1,7 @@
 import { exercises } from "@gym/shared/catalog";
 import { formatKg } from "@gym/shared/domain";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronRight, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import {
 	Bar,
@@ -42,15 +43,15 @@ const MUSCLES = new Map(
 );
 
 const VOLUME_CONFIG = {
-	volumeKg: { label: "Volumen", color: "var(--color-primary)" },
+	volumeKg: { label: "Volume", color: "var(--color-primary)" },
 } satisfies ChartConfig;
 
 const STRENGTH_CONFIG = {
-	oneRmKg: { label: "1RM estimado", color: "var(--color-primary)" },
+	oneRmKg: { label: "Est. 1RM", color: "var(--color-primary)" },
 } satisfies ChartConfig;
 
 const SETS_CONFIG = {
-	sets: { label: "Series", color: "var(--color-primary)" },
+	sets: { label: "Sets", color: "var(--color-primary)" },
 } satisfies ChartConfig;
 
 const SHORT_DATE = new Intl.DateTimeFormat("es", {
@@ -92,7 +93,7 @@ function ProgressPage() {
 	if (isPending) {
 		return (
 			<>
-				<AppHeader title="Progreso" />
+				<AppHeader title="Progress" />
 				<AppScroll className="space-y-4">
 					<div className="h-48 animate-pulse rounded-xl bg-muted" />
 					<div className="h-48 animate-pulse rounded-xl bg-muted" />
@@ -105,12 +106,27 @@ function ProgressPage() {
 
 	return (
 		<>
-			<AppHeader title="Progreso" />
+			<AppHeader title="Progress" />
 			<AppScroll className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+				{/*
+				 * Rankings has no room in the five-slot bottom bar, so on a phone
+				 * this is how it is reached. The sidebar links it directly.
+				 */}
+				<Link
+					to="/rankings"
+					className="flex min-h-12 items-center justify-between rounded-xl border bg-card px-4 text-sm transition-colors hover:border-primary lg:col-span-2 lg:hidden"
+				>
+					<span className="flex items-center gap-2">
+						<Trophy className="size-4 text-primary" aria-hidden />
+						Rankings and personal records
+					</span>
+					<ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+				</Link>
+
 				{!hasData && (
 					<div className="rounded-xl border border-dashed p-6 text-center lg:col-span-2">
 						<p className="text-muted-foreground">
-							Los gráficos aparecen cuando termines tu primera sesión.
+							Charts appear once you finish your first session.
 						</p>
 					</div>
 				)}
@@ -118,8 +134,8 @@ function ProgressPage() {
 				{hasData && (
 					<>
 						<Panel
-							title="Volumen por semana"
-							hint="Kilos totales movidos, sin contar calentamiento."
+							title="Weekly volume"
+							hint="Total kilos moved, warm-ups excluded."
 						>
 							<ChartContainer
 								config={VOLUME_CONFIG}
@@ -166,11 +182,11 @@ function ProgressPage() {
 
 						{trackable.length > 0 && (
 							<Panel
-								title="Fuerza"
-								hint="1RM estimado con Epley. Indicativo por encima de 12 repeticiones."
+								title="Strength"
+								hint="Estimated 1RM via Epley. Indicative above 12 reps."
 							>
 								<label htmlFor="exercise-select" className="sr-only">
-									Ejercicio
+									Exercise
 								</label>
 								<select
 									id="exercise-select"
@@ -226,10 +242,7 @@ function ProgressPage() {
 							</Panel>
 						)}
 
-						<Panel
-							title="Series por músculo"
-							hint="Dónde se está yendo el trabajo."
-						>
+						<Panel title="Sets per muscle" hint="Where the work is going.">
 							<ChartContainer
 								config={SETS_CONFIG}
 								className="w-full"

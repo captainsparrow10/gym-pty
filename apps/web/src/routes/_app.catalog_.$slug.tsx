@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_app/catalog_/$slug")({
 	notFoundComponent: () => (
 		<AppScroll>
 			<p className="py-12 text-center text-muted-foreground">
-				Ese ejercicio no existe.
+				That exercise does not exist.
 			</p>
 		</AppScroll>
 	),
@@ -32,11 +32,11 @@ export const Route = createFileRoute("/_app/catalog_/$slug")({
 
 /** Spanish labels for the logging types, which drive the session inputs. */
 const TYPE_LABEL: Record<string, string> = {
-	weight_reps: "Peso y repeticiones",
-	bodyweight_reps: "Peso corporal",
-	assisted_bodyweight: "Asistido",
-	duration: "Por tiempo",
-	distance_duration: "Distancia y tiempo",
+	weight_reps: "Weight & reps",
+	bodyweight_reps: "Bodyweight",
+	assisted_bodyweight: "Assisted",
+	duration: "Timed",
+	distance_duration: "Distance & time",
 };
 
 function ExerciseDetail() {
@@ -49,13 +49,13 @@ function ExerciseDetail() {
 			onSuccess: (result) => {
 				toast.success(
 					result.added
-						? `${exercise.name} agregado a la sesión`
-						: `${exercise.name} ya estaba en la sesión`,
+						? `${exercise.name} added to the session`
+						: `${exercise.name} is already in the session`,
 				);
 				navigate({ to: "/session" });
 			},
 			onError: (error) =>
-				toast.error("No se pudo agregar", {
+				toast.error("Could not add exercise", {
 					description: (error as Error).message,
 				}),
 		});
@@ -69,7 +69,7 @@ function ExerciseDetail() {
 					size="icon"
 					className="size-11 shrink-0"
 				>
-					<Link to="/catalog" aria-label="Volver al catálogo">
+					<Link to="/catalog" aria-label="Back to exercises">
 						<ArrowLeft className="size-5" aria-hidden />
 					</Link>
 				</Button>
@@ -93,7 +93,7 @@ function ExerciseDetail() {
 					<Tag>{exercise.equipment}</Tag>
 					{exercise.mechanic && (
 						<Tag>
-							{exercise.mechanic === "compound" ? "Compuesto" : "Aislado"}
+							{exercise.mechanic === "compound" ? "Compound" : "Isolation"}
 						</Tag>
 					)}
 					<Tag>
@@ -102,14 +102,14 @@ function ExerciseDetail() {
 				</div>
 
 				{exercise.secondaryMuscles.length > 0 && (
-					<Section title="También trabaja">
+					<Section title="Also works">
 						<p className="text-muted-foreground">
 							{exercise.secondaryMuscles.join(" · ")}
 						</p>
 					</Section>
 				)}
 
-				<Section title="Cómo se hace">
+				<Section title="How to do it">
 					{exercise.steps.length > 0 ? (
 						<ol className="space-y-3">
 							{exercise.steps.map((step, index) => (
@@ -133,8 +133,8 @@ function ExerciseDetail() {
 						<p className="flex gap-2 rounded-lg border bg-card p-3 text-sm text-muted-foreground">
 							<Info className="mt-0.5 size-4 shrink-0" aria-hidden />
 							<span>
-								Todavía no hay instrucciones para este ejercicio. La animación
-								muestra el movimiento completo.
+								No instructions for this exercise yet. The animation shows the
+								full movement.
 							</span>
 						</p>
 					)}
@@ -150,7 +150,7 @@ function ExerciseDetail() {
 					disabled={addToSession.isPending}
 				>
 					<Plus className="size-4" aria-hidden />
-					{addToSession.isPending ? "Agregando…" : "Agregar a la sesión"}
+					{addToSession.isPending ? "Adding…" : "Add to session"}
 				</Button>
 			</AppScroll>
 		</>

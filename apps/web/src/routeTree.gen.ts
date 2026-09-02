@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppCatalogRouteImport } from './routes/_app.catalog'
 import { Route as AppCoachRouteImport } from './routes/_app.coach'
 import { Route as AppProgressRouteImport } from './routes/_app.progress'
+import { Route as AppRankingsRouteImport } from './routes/_app.rankings'
 import { Route as AppSessionRouteImport } from './routes/_app.session'
 import { Route as AppTrainRouteImport } from './routes/_app.train'
 import { Route as AppCatalogSlugRouteImport } from './routes/_app.catalog_.$slug'
@@ -48,6 +49,11 @@ const AppProgressRoute = AppProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRankingsRoute = AppRankingsRouteImport.update({
+  id: '/rankings',
+  path: '/rankings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSessionRoute = AppSessionRouteImport.update({
   id: '/session',
   path: '/session',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
+  '/rankings': typeof AppRankingsRoute
   '/session': typeof AppSessionRoute
   '/train': typeof AppTrainRoute
   '/catalog/$slug': typeof AppCatalogSlugRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
+  '/rankings': typeof AppRankingsRoute
   '/session': typeof AppSessionRoute
   '/train': typeof AppTrainRoute
   '/': typeof AppIndexRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/_app/catalog': typeof AppCatalogRoute
   '/_app/coach': typeof AppCoachRoute
   '/_app/progress': typeof AppProgressRoute
+  '/_app/rankings': typeof AppRankingsRoute
   '/_app/session': typeof AppSessionRoute
   '/_app/train': typeof AppTrainRoute
   '/_app/': typeof AppIndexRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/coach'
     | '/progress'
+    | '/rankings'
     | '/session'
     | '/train'
     | '/catalog/$slug'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/coach'
     | '/progress'
+    | '/rankings'
     | '/session'
     | '/train'
     | '/'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/_app/catalog'
     | '/_app/coach'
     | '/_app/progress'
+    | '/_app/rankings'
     | '/_app/session'
     | '/_app/train'
     | '/_app/'
@@ -179,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProgressRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/rankings': {
+      id: '/_app/rankings'
+      path: '/rankings'
+      fullPath: '/rankings'
+      preLoaderRoute: typeof AppRankingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/session': {
       id: '/_app/session'
       path: '/session'
@@ -207,6 +226,7 @@ interface AppRouteChildren {
   AppCatalogRoute: typeof AppCatalogRoute
   AppCoachRoute: typeof AppCoachRoute
   AppProgressRoute: typeof AppProgressRoute
+  AppRankingsRoute: typeof AppRankingsRoute
   AppSessionRoute: typeof AppSessionRoute
   AppTrainRoute: typeof AppTrainRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -217,6 +237,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCatalogRoute: AppCatalogRoute,
   AppCoachRoute: AppCoachRoute,
   AppProgressRoute: AppProgressRoute,
+  AppRankingsRoute: AppRankingsRoute,
   AppSessionRoute: AppSessionRoute,
   AppTrainRoute: AppTrainRoute,
   AppIndexRoute: AppIndexRoute,

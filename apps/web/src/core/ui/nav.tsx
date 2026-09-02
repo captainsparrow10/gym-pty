@@ -6,6 +6,7 @@ import {
 	LineChart,
 	type LucideIcon,
 	PersonStanding,
+	Trophy,
 } from "lucide-react";
 
 type Destination = {
@@ -16,15 +17,25 @@ type Destination = {
 
 /**
  * Five destinations is the documented ceiling for a bottom bar; a sixth turns
- * it into a menu. Every item keeps its text label — icon-only navigation is
- * consistently worse to discover.
+ * it into a menu. A sidebar has no such limit, so Rankings appears there
+ * directly and is reached from the Progress screen on a phone — the two answer
+ * neighbouring questions anyway.
+ *
+ * Every item keeps its text label. Icon-only navigation is consistently worse
+ * to discover.
  */
-export const DESTINATIONS: Destination[] = [
-	{ to: "/", label: "Hoy", icon: House },
-	{ to: "/train", label: "Entrenar", icon: PersonStanding },
-	{ to: "/catalog", label: "Ejercicios", icon: Dumbbell },
-	{ to: "/progress", label: "Progreso", icon: LineChart },
+const TAB_BAR: Destination[] = [
+	{ to: "/", label: "Today", icon: House },
+	{ to: "/train", label: "Train", icon: PersonStanding },
+	{ to: "/catalog", label: "Exercises", icon: Dumbbell },
+	{ to: "/progress", label: "Progress", icon: LineChart },
 	{ to: "/coach", label: "Coach", icon: BotMessageSquare },
+];
+
+const SIDEBAR: Destination[] = [
+	...TAB_BAR.slice(0, 4),
+	{ to: "/rankings", label: "Rankings", icon: Trophy },
+	...TAB_BAR.slice(4),
 ];
 
 /** `exact` only on the index, so /catalog/squat still lights up Ejercicios. */
@@ -40,11 +51,11 @@ const activeOptions = (to: string) => ({ exact: to === "/" });
 export function TabBar() {
 	return (
 		<nav
-			aria-label="Principal"
+			aria-label="Main"
 			className="absolute inset-x-0 bottom-0 z-20 border-t bg-background/95 backdrop-blur md:rounded-b-xl lg:hidden"
 		>
 			<ul className="flex pb-[env(safe-area-inset-bottom)]">
-				{DESTINATIONS.map(({ to, label, icon: Icon }) => (
+				{TAB_BAR.map(({ to, label, icon: Icon }) => (
 					<li key={to} className="flex-1">
 						<Link
 							to={to}
@@ -75,14 +86,14 @@ export function TabBar() {
 export function Sidebar() {
 	return (
 		<nav
-			aria-label="Principal"
+			aria-label="Main"
 			className="hidden w-56 shrink-0 flex-col gap-1 border-r p-4 lg:flex"
 		>
 			<span className="mb-4 px-3 font-display text-2xl font-bold uppercase tracking-wide">
 				GYM
 			</span>
 
-			{DESTINATIONS.map(({ to, label, icon: Icon }) => (
+			{SIDEBAR.map(({ to, label, icon: Icon }) => (
 				<Link
 					key={to}
 					to={to}

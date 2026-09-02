@@ -72,10 +72,10 @@ export function ExercisePicker({
 			<DrawerContent className="max-h-[85dvh]">
 				<DrawerHeader className="pb-2 text-left">
 					<DrawerTitle className="font-display uppercase tracking-wide">
-						Agregar ejercicio
+						Add exercise
 					</DrawerTitle>
 					<DrawerDescription>
-						Buscá por nombre, músculo o equipo.
+						Search by name, muscle or equipment.
 					</DrawerDescription>
 				</DrawerHeader>
 
@@ -83,10 +83,10 @@ export function ExercisePicker({
 					<CommandInput
 						value={query}
 						onValueChange={setQuery}
-						placeholder="Press banca, dominadas, mancuerna…"
+						placeholder="Bench press, pull-up, dumbbell…"
 					/>
 					<CommandList className="max-h-[60dvh]">
-						<CommandEmpty>Nada coincide con esa búsqueda.</CommandEmpty>
+						<CommandEmpty>Nothing matches that search.</CommandEmpty>
 						<CommandGroup>
 							{results.map((exercise) => (
 								<CommandItem

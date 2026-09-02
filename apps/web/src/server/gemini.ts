@@ -72,7 +72,7 @@ export type GenerateResult = {
 
 export class QuotaExhaustedError extends Error {
 	constructor() {
-		super("Se agotó la cuota diaria de todos los modelos disponibles.");
+		super("The daily quota for every available model is exhausted.");
 		this.name = "QuotaExhaustedError";
 	}
 }
@@ -83,8 +83,7 @@ export async function generate(
 	tools: Tool[],
 ): Promise<GenerateResult> {
 	const apiKey = process.env.GEMINI_API_KEY;
-	if (!apiKey)
-		throw new Error("GEMINI_API_KEY no está configurada en el servidor.");
+	if (!apiKey) throw new Error("GEMINI_API_KEY is not set on the server.");
 
 	const body = {
 		contents: messages.map((message) => ({
@@ -140,5 +139,5 @@ export async function generate(
 
 	if (String((lastError as Error)?.message).includes("429"))
 		throw new QuotaExhaustedError();
-	throw lastError ?? new Error("No hubo respuesta de ningún modelo.");
+	throw lastError ?? new Error("No model returned a response.");
 }

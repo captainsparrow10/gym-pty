@@ -42,13 +42,13 @@ export const TOOLS: Tool[] = [
 	{
 		name: "get_training_summary",
 		description:
-			"Resumen del entrenamiento del usuario en los últimos N días: sesiones, series, volumen total y reparto por músculo. Usalo para responder sobre frecuencia, carga de trabajo o qué está descuidando.",
+			"The user's training over the last N days: sessions, sets, total volume and the split per muscle. Use it for questions about frequency, workload, or what is being neglected.",
 		parameters: {
 			type: "object",
 			properties: {
 				days: {
 					type: "integer",
-					description: "Ventana en días. 30 si el usuario no especifica.",
+					description: "Window in days. Use 30 when the user does not say.",
 				},
 			},
 			required: ["days"],
@@ -57,13 +57,13 @@ export const TOOLS: Tool[] = [
 	{
 		name: "get_exercise_history",
 		description:
-			"Historial de un ejercicio concreto: series por fecha y mejor 1RM estimado. Usalo para responder sobre progreso o estancamiento en un movimiento.",
+			"History for one exercise: sets by date and best estimated 1RM. Use it for questions about progress or plateaus on a movement.",
 		parameters: {
 			type: "object",
 			properties: {
 				exercise_slug: {
 					type: "string",
-					description: "Slug del catálogo, por ejemplo bench-press.",
+					description: "Catalogue slug, for example bench-press.",
 				},
 			},
 			required: ["exercise_slug"],
@@ -72,27 +72,29 @@ export const TOOLS: Tool[] = [
 	{
 		name: "find_exercises",
 		description:
-			"Busca en el catálogo de 302 ejercicios por músculo, equipamiento o texto libre. Usalo cuando pregunten qué ejercicios existen para algo, o alternativas a uno.",
+			"Searches the 302-exercise catalogue by muscle, equipment or free text. Use it when asked what exercises exist for something, or for alternatives to one.",
 		parameters: {
 			type: "object",
 			properties: {
 				muscle: {
 					type: "string",
-					description: "Músculo primario, en inglés (Chest, Lats…).",
+					description: "Primary muscle, e.g. Chest, Lats.",
 				},
 				equipment: {
 					type: "string",
 					description:
-						"Equipamiento, en inglés (Barbell, Dumbbell, Bodyweight, Machine, Cable…).",
+						"Equipment, e.g. Barbell, Dumbbell, Bodyweight, Machine, Cable.",
 				},
-				query: { type: "string", description: "Texto libre sobre el nombre." },
+				query: {
+					type: "string",
+					description: "Free text matched against the name.",
+				},
 			},
 		},
 	},
 	{
 		name: "list_routines",
-		description:
-			"Rutinas guardadas por el usuario y los ejercicios de cada una.",
+		description: "The user's saved routines and the exercises in each.",
 		parameters: { type: "object", properties: {} },
 	},
 ];
@@ -131,22 +133,21 @@ async function trainingSummary(supabase: Client, days: number) {
 	}
 
 	return {
-		ventana_dias: days,
-		sesiones: sessions.length,
-		series_efectivas: sets,
-		volumen_kg: Math.round(volume),
-		series_por_musculo: Object.fromEntries(
+		window_days: days,
+		sessions: sessions.length,
+		working_sets: sets,
+		volume_kg: Math.round(volume),
+		sets_per_muscle: Object.fromEntries(
 			[...perMuscle.entries()].sort((a, b) => b[1] - a[1]),
 		),
 		// Stated rather than left to be inferred from an empty object.
-		sin_datos: sessions.length === 0,
+		no_data: sessions.length === 0,
 	};
 }
 
 async function exerciseHistory(supabase: Client, slug: string) {
 	const exercise = BY_SLUG.get(slug);
-	if (!exercise)
-		return { error: `No existe el ejercicio "${slug}" en el catálogo.` };
+	if (!exercise) return { error: `No exercise "${slug}" in the catalogue.` };
 
 	const { data, error } = await supabase
 		.from("logged_exercises")
@@ -171,16 +172,16 @@ async function exerciseHistory(supabase: Client, slug: string) {
 		.filter(([, sets]) => sets.length > 0)
 		.sort((a, b) => a[0].localeCompare(b[0]))
 		.map(([date, sets]) => ({
-			fecha: date,
-			series: sets.map((set) => `${set.reps}x${formatKg(set.weightKg)}kg`),
-			mejor_1rm_estimado_kg: Math.round(bestOneRepMax(sets) * 10) / 10,
+			date,
+			sets: sets.map((set) => `${set.reps}x${formatKg(set.weightKg)}kg`),
+			best_estimated_1rm_kg: Math.round(bestOneRepMax(sets) * 10) / 10,
 		}));
 
 	return {
-		ejercicio: exercise.name,
-		dias_entrenados: days.length,
-		historial: days.slice(-12),
-		sin_datos: days.length === 0,
+		exercise: exercise.name,
+		days_trained: days.length,
+		history: days.slice(-12),
+		no_data: days.length === 0,
 	};
 }
 
@@ -221,12 +222,12 @@ function findExercises(args: {
 		total: matches.length,
 		// Capped: a hundred names in the context is noise, and the model only
 		// needs enough to make a recommendation.
-		ejercicios: matches.slice(0, 20).map((exercise) => ({
+		exercises: matches.slice(0, 20).map((exercise) => ({
 			slug: exercise.slug,
-			nombre: exercise.name,
-			musculo: exercise.primaryMuscle,
-			equipo: exercise.equipment,
-			tipo: exercise.exerciseType,
+			name: exercise.name,
+			muscle: exercise.primaryMuscle,
+			equipment: exercise.equipment,
+			type: exercise.exerciseType,
 		})),
 	};
 }
@@ -239,16 +240,16 @@ async function listRoutines(supabase: Client) {
 	if (error) throw error;
 
 	return {
-		rutinas: (data ?? []).map((routine) => ({
-			nombre: routine.name,
-			ejercicios: (routine.routine_exercises ?? [])
+		routines: (data ?? []).map((routine) => ({
+			name: routine.name,
+			exercises: (routine.routine_exercises ?? [])
 				.sort((a, b) => a.position - b.position)
 				.map(
 					(exercise) =>
 						NAMES.get(exercise.exercise_slug) ?? exercise.exercise_slug,
 				),
 		})),
-		sin_datos: (data ?? []).length === 0,
+		no_data: (data ?? []).length === 0,
 	};
 }
 
@@ -269,6 +270,6 @@ export async function runTool(
 		case "list_routines":
 			return listRoutines(supabase);
 		default:
-			return { error: `Herramienta desconocida: ${name}` };
+			return { error: `Unknown tool: ${name}` };
 	}
 }

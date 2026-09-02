@@ -100,19 +100,19 @@ export function authErrorMessage(error: unknown): string {
 	const message = error instanceof Error ? error.message : String(error);
 
 	if (/invalid login credentials/i.test(message))
-		return "Email o contraseña incorrectos.";
+		return "Wrong email or password.";
 	if (/user already registered/i.test(message))
-		return "Ya existe una cuenta con ese email.";
+		return "An account with that email already exists.";
 	if (/password should be at least/i.test(message))
-		return "La contraseña necesita al menos 6 caracteres.";
+		return "Password needs at least 6 characters.";
 	if (
 		/unable to validate email/i.test(message) ||
 		/invalid email/i.test(message)
 	)
-		return "Ese email no parece válido.";
-	if (/email not confirmed/i.test(message)) return "Falta confirmar el email.";
+		return "That email does not look valid.";
+	if (/email not confirmed/i.test(message)) return "Email not confirmed yet.";
 	if (/rate limit|too many/i.test(message))
-		return "Demasiados intentos. Esperá un momento.";
+		return "Too many attempts. Wait a moment.";
 
 	return message;
 }

@@ -75,7 +75,7 @@ function useRecentSessions() {
 	});
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat("es", {
+const DATE_FORMAT = new Intl.DateTimeFormat("en", {
 	weekday: "long",
 	day: "numeric",
 	month: "short",
@@ -94,13 +94,13 @@ function TodayPage() {
 
 	return (
 		<>
-			<AppHeader title="Hoy" />
+			<AppHeader title="Today" />
 			<AppScroll className="space-y-6 lg:grid lg:grid-cols-[1fr_2fr] lg:items-start lg:gap-8 lg:space-y-0">
 				<div className="space-y-3">
 					<Button asChild className="h-14 w-full text-base">
 						<Link to="/session">
 							<Play className="size-5" aria-hidden />
-							{active ? "Seguir la sesión" : "Empezar a entrenar"}
+							{active ? "Continue session" : "Start training"}
 						</Link>
 					</Button>
 
@@ -108,7 +108,7 @@ function TodayPage() {
 						to="/catalog"
 						className="flex min-h-12 items-center justify-between rounded-xl border bg-card px-4 text-sm transition-colors hover:border-primary"
 					>
-						<span>Explorar los {exercises.length} ejercicios</span>
+						<span>Browse all {exercises.length} exercises</span>
 						<ChevronRight
 							className="size-4 text-muted-foreground"
 							aria-hidden
@@ -118,7 +118,7 @@ function TodayPage() {
 
 				<section>
 					<h2 className="mb-3 font-display text-lg font-semibold uppercase tracking-wide">
-						Últimas sesiones
+						Recent sessions
 					</h2>
 
 					{isPending ? (
@@ -140,12 +140,12 @@ function TodayPage() {
 											</span>
 										</div>
 										<p className="mt-1 truncate text-sm text-muted-foreground">
-											{session.exerciseNames.join(" · ") || "Sin ejercicios"}
+											{session.exerciseNames.join(" · ") || "No exercises"}
 										</p>
 										<p className="mt-2 flex gap-4 text-xs text-muted-foreground">
-											<span>{session.setCount} series</span>
+											<span>{session.setCount} sets</span>
 											{session.volumeKg > 0 && (
-												<span>{formatKg(session.volumeKg)} kg de volumen</span>
+												<span>{formatKg(session.volumeKg)} kg volume</span>
 											)}
 										</p>
 									</article>
@@ -155,7 +155,7 @@ function TodayPage() {
 					) : (
 						<div className="rounded-xl border border-dashed p-6 text-center">
 							<p className="text-muted-foreground">
-								Todavía no hay sesiones. La primera empieza arriba.
+								No sessions yet. Start your first one above.
 							</p>
 						</div>
 					)}

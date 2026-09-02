@@ -56,7 +56,7 @@ function SessionPage() {
 	if (isPending) {
 		return (
 			<>
-				<AppHeader title="Sesión" />
+				<AppHeader title="Session" />
 				<AppScroll>
 					<div className="h-24 animate-pulse rounded-xl bg-muted" />
 				</AppScroll>
@@ -67,15 +67,15 @@ function SessionPage() {
 	if (!session) {
 		return (
 			<>
-				<AppHeader title="Sesión" />
+				<AppHeader title="Session" />
 				<AppScroll className="flex flex-col items-center justify-center gap-4 text-center">
-					<p className="text-muted-foreground">No tenés una sesión abierta.</p>
+					<p className="text-muted-foreground">No session in progress.</p>
 					<Button
 						onClick={() => start.mutate()}
 						disabled={start.isPending}
 						className="h-12 px-8"
 					>
-						{start.isPending ? "Abriendo…" : "Empezar a entrenar"}
+						{start.isPending ? "Starting…" : "Start training"}
 					</Button>
 				</AppScroll>
 			</>
@@ -90,7 +90,7 @@ function SessionPage() {
 	return (
 		<>
 			<AppHeader
-				title="Sesión"
+				title="Session"
 				action={
 					<Button
 						variant={setCount > 0 ? "default" : "ghost"}
@@ -111,7 +111,7 @@ function SessionPage() {
 								Terminar
 							</>
 						) : (
-							"Descartar"
+							"Discard"
 						)}
 					</Button>
 				}
@@ -120,7 +120,7 @@ function SessionPage() {
 			<AppScroll className="space-y-4 pb-40 lg:pb-28">
 				{session.exercises.length === 0 && (
 					<p className="py-8 text-center text-muted-foreground">
-						Agregá el primer ejercicio para arrancar.
+						Add your first exercise to get going.
 					</p>
 				)}
 
@@ -237,7 +237,7 @@ function ExerciseCard({
 					variant="ghost"
 					size="icon"
 					className="size-11 shrink-0 text-muted-foreground"
-					aria-label={`Quitar ${NAMES.get(exercise.slug) ?? exercise.slug} de la sesión`}
+					aria-label={`Remove ${NAMES.get(exercise.slug) ?? exercise.slug} from the session`}
 					onClick={() => removeExercise.mutate(exercise.id)}
 				>
 					<Trash2 className="size-4" aria-hidden />
@@ -262,7 +262,7 @@ function ExerciseCard({
 								variant="ghost"
 								size="icon"
 								className="size-9 shrink-0 text-muted-foreground"
-								aria-label={`Borrar serie ${index + 1}`}
+								aria-label={`Delete set ${index + 1}`}
 								onClick={() => deleteSet.mutate(set.id)}
 							>
 								<Trash2 className="size-3.5" aria-hidden />
@@ -312,14 +312,14 @@ function ExerciseCard({
 					className="h-12 shrink-0 px-5"
 				>
 					<Timer className="size-4" aria-hidden />
-					Anotar
+					Log set
 				</Button>
 			</div>
 
 			{(volume > 0 || last) && (
 				<footer className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground">
-					{volume > 0 && <span>Volumen {formatKg(volume)} kg</span>}
-					{oneRm > 0 && <span>1RM est. {formatKg(oneRm)} kg</span>}
+					{volume > 0 && <span>Volume {formatKg(volume)} kg</span>}
+					{oneRm > 0 && <span>Est. 1RM {formatKg(oneRm)} kg</span>}
 					{last && last.length > 0 && (
 						<span>
 							Última vez:{" "}

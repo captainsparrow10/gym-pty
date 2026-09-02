@@ -125,7 +125,7 @@ function CatalogPage() {
 
 	return (
 		<>
-			<AppHeader title="Ejercicios" />
+			<AppHeader title="Exercises" />
 
 			<div className="space-y-3 border-b px-4 py-3 lg:px-8">
 				<div className="flex gap-2">
@@ -140,8 +140,8 @@ function CatalogPage() {
 							onChange={(event) =>
 								setFilter({ q: event.target.value || undefined })
 							}
-							placeholder="Buscar ejercicio…"
-							aria-label="Buscar ejercicio"
+							placeholder="Search exercises…"
+							aria-label="Search exercises"
 							className="h-11 pl-9"
 						/>
 					</div>
@@ -158,7 +158,7 @@ function CatalogPage() {
 
 				<div className="flex items-center justify-between">
 					<p className="text-sm text-muted-foreground">
-						{results.length} de {exercises.length}
+						{results.length} of {exercises.length}
 					</p>
 					{hasFilters && (
 						<Button
@@ -168,7 +168,7 @@ function CatalogPage() {
 							className="h-8"
 						>
 							<X className="size-3.5" aria-hidden />
-							Limpiar todo
+							Clear all
 						</Button>
 					)}
 				</div>
@@ -180,7 +180,7 @@ function CatalogPage() {
 			>
 				{results.length === 0 ? (
 					<p className="py-12 text-center text-muted-foreground">
-						Ningún ejercicio coincide con esos filtros.
+						No exercises match those filters.
 					</p>
 				) : (
 					<div

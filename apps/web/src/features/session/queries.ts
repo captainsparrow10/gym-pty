@@ -87,7 +87,7 @@ export function useStartSession() {
 	return useMutation({
 		mutationFn: async () => {
 			const { data: auth } = await supabase.auth.getUser();
-			if (!auth.user) throw new Error("No hay sesión iniciada.");
+			if (!auth.user) throw new Error("Not signed in.");
 
 			const { data, error } = await supabase
 				.from("sessions")
@@ -299,7 +299,7 @@ export function useAddToSession() {
 					) + 1;
 			} else {
 				const { data: auth } = await supabase.auth.getUser();
-				if (!auth.user) throw new Error("No hay sesión iniciada.");
+				if (!auth.user) throw new Error("Not signed in.");
 
 				const { data: created, error: createError } = await supabase
 					.from("sessions")

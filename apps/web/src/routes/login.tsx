@@ -18,8 +18,8 @@ export const Route = createFileRoute("/login")({
 });
 
 const credentials = z.object({
-	email: z.string().email("Ese email no parece válido."),
-	password: z.string().min(6, "Al menos 6 caracteres."),
+	email: z.string().email("That email does not look valid."),
+	password: z.string().min(6, "At least 6 characters."),
 });
 
 function LoginPage() {
@@ -63,8 +63,8 @@ function LoginPage() {
 					</h1>
 					<p className="text-sm text-muted-foreground">
 						{mode === "signin"
-							? "Entrá para seguir tu progreso."
-							: "Creá tu cuenta."}
+							? "Sign in to track your progress."
+							: "Create your account."}
 					</p>
 				</div>
 
@@ -104,7 +104,7 @@ function LoginPage() {
 					<form.Field name="password">
 						{(field) => (
 							<div className="space-y-1.5">
-								<Label htmlFor={field.name}>Contraseña</Label>
+								<Label htmlFor={field.name}>Password</Label>
 								<Input
 									id={field.name}
 									name={field.name}
@@ -151,7 +151,9 @@ function LoginPage() {
 					}}
 					className="mt-4 min-h-11 w-full text-sm text-muted-foreground hover:text-foreground"
 				>
-					{mode === "signin" ? "No tengo cuenta" : "Ya tengo cuenta"}
+					{mode === "signin"
+						? "I need an account"
+						: "I already have an account"}
 				</button>
 			</div>
 		</div>
@@ -164,7 +166,7 @@ function FieldError({ id, errors }: { id: string; errors: unknown[] }) {
 	const message =
 		typeof first === "string"
 			? first
-			: ((first as { message?: string })?.message ?? "Revisá esto.");
+			: ((first as { message?: string })?.message ?? "Check this field.");
 
 	return (
 		<p id={id} className="text-sm text-destructive">
