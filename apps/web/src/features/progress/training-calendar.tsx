@@ -15,8 +15,22 @@ const FULL_DATE = new Intl.DateTimeFormat("en", {
 	day: "numeric",
 });
 
-/** Monday-first, matching `weekStart` and the weekly volume chart. */
-const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
+/**
+ * Monday-first, matching `weekStart` and the weekly volume chart.
+ *
+ * Each row carries its own name as well as its initial: three of the seven
+ * initials repeat, so the initial alone cannot key the row and the index would
+ * be keying on position rather than on identity.
+ */
+const WEEKDAYS = [
+	{ name: "monday", initial: "M" },
+	{ name: "tuesday", initial: "T" },
+	{ name: "wednesday", initial: "W" },
+	{ name: "thursday", initial: "T" },
+	{ name: "friday", initial: "F" },
+	{ name: "saturday", initial: "S" },
+	{ name: "sunday", initial: "S" },
+];
 
 type Day = { iso: string; sets: number; volumeKg: number };
 
@@ -158,13 +172,13 @@ export function TrainingCalendar({ history }: { history: HistorySet[] }) {
 					</span>
 				))}
 
-				{WEEKDAY_INITIALS.map((initial, day) => (
-					<Fragment key={`row-${initial}-${day}`}>
+				{WEEKDAYS.map((weekday, day) => (
+					<Fragment key={weekday.name}>
 						<span
 							className="flex items-center pr-1 text-[0.625rem] leading-none text-muted-foreground"
 							aria-hidden
 						>
-							{day % 2 === 0 ? initial : ""}
+							{day % 2 === 0 ? weekday.initial : ""}
 						</span>
 						{weeks.map((column) => {
 							const entry = column[day];

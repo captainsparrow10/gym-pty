@@ -94,7 +94,7 @@ export function Measurements() {
 		let any = false;
 
 		for (const field of MEASUREMENTS) {
-			const raw = (draft ?? {})[field.key];
+			const raw = draft?.[field.key];
 			if (raw === undefined) continue;
 			const text = raw.trim().replace(",", ".");
 			if (text === "") {
@@ -293,7 +293,7 @@ export function Measurements() {
 									// `decimal`, not `numeric`: half a centimetre is a real
 									// measurement and the iOS numeric keypad has no separator.
 									inputMode="decimal"
-									value={(draft ?? {})[field.key] ?? ""}
+									value={draft?.[field.key] ?? ""}
 									onChange={(event) =>
 										setDraft((previous) => ({
 											...(previous ?? {}),
