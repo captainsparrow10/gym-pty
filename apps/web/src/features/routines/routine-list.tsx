@@ -169,7 +169,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
 							}
 							className="divide-y"
 						>
-							{(exercise) => (
+							{(exercise, index) => (
 								<SortableItem key={exercise.id} id={exercise.id}>
 									{(handle) => (
 										<div className="flex items-center gap-1 bg-card pr-2">
@@ -178,6 +178,10 @@ function RoutineCard({ routine }: { routine: Routine }) {
 											) : (
 												<span className="w-3" />
 											)}
+											{/* The order of a routine is the routine. */}
+											<span className="w-5 shrink-0 text-center text-sm tabular-nums text-muted-foreground">
+												{index + 1}
+											</span>
 											<span className="min-w-0 flex-1 truncate py-2 text-sm">
 												{NAMES.get(exercise.slug) ?? exercise.slug}
 											</span>

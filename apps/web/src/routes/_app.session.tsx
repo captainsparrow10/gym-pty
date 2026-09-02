@@ -139,39 +139,24 @@ function SessionPage() {
 				 * for next anyway.
 				 */}
 				{/*
-				 * The add button is the grid's footer rather than a block underneath.
-				 * With an odd number of cards the last row had a hole in it; filling
-				 * that hole with the thing you would reach for next is better than
-				 * leaving the space empty or dropping to one column.
+				 * Numbered, because the order is the point: on a two-column grid
+				 * nothing else says whether reading goes across or down. The number
+				 * is the answer, and it is what the drag is rearranging.
 				 */}
 				<SortableList
 					items={session.exercises}
+					layout="grid"
 					onReorder={(next) =>
 						reorder.mutate(next.map((exercise) => exercise.id))
 					}
 					className="grid gap-4 lg:grid-cols-2 lg:items-start"
-					footer={
-						<ExercisePicker
-							onPick={(slug) =>
-								addExercise.mutate({
-									sessionId: session.id,
-									slug,
-									position: session.exercises.length,
-								})
-							}
-						>
-							<Button variant="outline" className="h-12 w-full">
-								<Plus className="size-4" aria-hidden />
-								Add exercise
-							</Button>
-						</ExercisePicker>
-					}
 				>
-					{(exercise) => (
+					{(exercise, index) => (
 						<SortableItem key={exercise.id} id={exercise.id}>
 							{(handle) => (
 								<ExerciseCard
 									exercise={exercise}
+									position={index + 1}
 									handle={session.exercises.length > 1 ? handle : null}
 									onLogged={() => setResting(true)}
 								/>
@@ -179,6 +164,26 @@ function SessionPage() {
 						</SortableItem>
 					)}
 				</SortableList>
+
+				{/*
+				 * Always the last thing, full width. Sitting it inside the grid filled
+				 * the empty cell but put it between exercises, which made the order
+				 * ambiguous — a worse problem than the gap it solved.
+				 */}
+				<ExercisePicker
+					onPick={(slug) =>
+						addExercise.mutate({
+							sessionId: session.id,
+							slug,
+							position: session.exercises.length,
+						})
+					}
+				>
+					<Button variant="outline" className="h-12 w-full">
+						<Plus className="size-4" aria-hidden />
+						Add exercise
+					</Button>
+				</ExercisePicker>
 
 				{/*
 				 * Only shown when the browser refused the lock, and phrased as what it
@@ -204,10 +209,13 @@ function SessionPage() {
 
 function ExerciseCard({
 	exercise,
+	position,
 	onLogged,
 	handle,
 }: {
 	exercise: SessionExercise;
+	/** 1-based place in the session. */
+	position: number;
 	onLogged: () => void;
 	/** Drag handle, or null when there is nothing to reorder. */
 	handle?: React.ReactNode;
@@ -254,13 +262,20 @@ function ExerciseCard({
 
 	return (
 		<section className="rounded-xl border bg-card">
-			<header className="flex items-center gap-3 border-b p-3">
+			<header className="flex items-center gap-2 border-b p-3">
 				{handle}
+				<span
+					className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm font-bold tabular-nums"
+					aria-hidden
+				>
+					{position}
+				</span>
 				<ExerciseArt
 					slug={exercise.slug}
 					className="size-11 shrink-0 border-0 bg-transparent"
 				/>
 				<h2 className="min-w-0 flex-1 truncate font-medium">
+					<span className="sr-only">{position}. </span>
 					{NAMES.get(exercise.slug) ?? exercise.slug}
 				</h2>
 				<Button

@@ -7,11 +7,9 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { restrictToParentElement } from "@dnd-kit/modifiers";
 import {
-	restrictToParentElement,
-	restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import {
+	rectSortingStrategy,
 	SortableContext,
 	sortableKeyboardCoordinates,
 	useSortable,
@@ -32,12 +30,18 @@ import { cn } from "@/lib/utils";
  * The keyboard sensor is not decoration: reordering by mouse alone is
  * unusable for anyone who cannot, and dnd-kit gives arrow-key reordering for
  * the cost of one line.
+ *
+ * `layout` matters. A single column can be restricted to the vertical axis,
+ * which makes dragging feel deliberate. A grid cannot: restricting the axis
+ * there means an item can never cross into the other column, so half the
+ * reordering is simply impossible.
  */
 export function SortableList<T extends { id: string }>({
 	items,
 	onReorder,
 	children,
 	footer,
+	layout = "list",
 	className,
 }: {
 	items: T[];
@@ -50,6 +54,8 @@ export function SortableList<T extends { id: string }>({
 	 * here fills it instead of starting a new row below.
 	 */
 	footer?: ReactNode;
+	/** "grid" allows dragging in both axes; "list" pins movement to vertical. */
+	layout?: "list" | "grid";
 	className?: string;
 }) {
 	const sensors = useSensors(
@@ -79,10 +85,15 @@ export function SortableList<T extends { id: string }>({
 		<DndContext
 			sensors={sensors}
 			collisionDetection={closestCenter}
-			modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+			modifiers={[restrictToParentElement]}
 			onDragEnd={handleDragEnd}
 		>
-			<SortableContext items={items} strategy={verticalListSortingStrategy}>
+			<SortableContext
+				items={items}
+				strategy={
+					layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy
+				}
+			>
 				<div className={className}>
 					{items.map((item, index) => children(item, index))}
 					{footer}
