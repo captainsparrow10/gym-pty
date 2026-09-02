@@ -11,3 +11,7 @@ dist/
 .DS_Store
 *.tsbuildinfo
 .cache/
+
+# Estado local del CLI de Supabase
+supabase/.temp/
+supabase/.branches/

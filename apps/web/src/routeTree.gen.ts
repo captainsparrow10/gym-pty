@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppCatalogRouteImport } from './routes/_app.catalog'
 import { Route as AppCoachRouteImport } from './routes/_app.coach'
@@ -18,6 +19,11 @@ import { Route as AppTrainRouteImport } from './routes/_app.train'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -48,12 +54,14 @@ const AppTrainRoute = AppTrainRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
   '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
   '/train': typeof AppTrainRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
@@ -63,6 +71,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/_app/catalog': typeof AppCatalogRoute
   '/_app/coach': typeof AppCoachRoute
   '/_app/progress': typeof AppProgressRoute
@@ -71,12 +80,13 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/catalog' | '/coach' | '/progress' | '/train'
+  fullPaths: '/' | '/login' | '/catalog' | '/coach' | '/progress' | '/train'
   fileRoutesByTo: FileRoutesByTo
-  to: '/catalog' | '/coach' | '/progress' | '/train' | '/'
+  to: '/login' | '/catalog' | '/coach' | '/progress' | '/train' | '/'
   id:
     | '__root__'
     | '/_app'
+    | '/login'
     | '/_app/catalog'
     | '/_app/coach'
     | '/_app/progress'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -95,6 +106,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -155,6 +173,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

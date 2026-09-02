@@ -6,6 +6,12 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
+	/*
+	 * Vite loads .env relative to the app root, but this is a workspace and the
+	 * build scripts read the same file. One .env at the repository root beats
+	 * keeping the Supabase values in two places that can drift.
+	 */
+	envDir: "../..",
 	resolve: {
 		tsconfigPaths: true,
 		alias: {
