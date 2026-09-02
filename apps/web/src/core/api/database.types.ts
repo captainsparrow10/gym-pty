@@ -207,6 +207,7 @@ export type Database = {
 					created_at: string;
 					date: string;
 					duration_sec: number;
+					finished_at: string | null;
 					id: string;
 					notes: string | null;
 					routine_id: string | null;
@@ -217,6 +218,7 @@ export type Database = {
 					created_at?: string;
 					date?: string;
 					duration_sec?: number;
+					finished_at?: string | null;
 					id?: string;
 					notes?: string | null;
 					routine_id?: string | null;
@@ -227,6 +229,7 @@ export type Database = {
 					created_at?: string;
 					date?: string;
 					duration_sec?: number;
+					finished_at?: string | null;
 					id?: string;
 					notes?: string | null;
 					routine_id?: string | null;

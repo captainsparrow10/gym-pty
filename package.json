@@ -11,6 +11,10 @@
     "build": "pnpm --filter @gym/web build",
     "build:catalog": "node scripts/build-catalog.ts",
     "check:contrast": "node scripts/check-contrast.ts",
-    "build:catalog:ai": "node scripts/build-catalog-ai.ts"
+    "build:catalog:ai": "node scripts/build-catalog-ai.ts",
+    "smoke:session": "node scripts/smoke-session.ts"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.114.0"
   }
 }

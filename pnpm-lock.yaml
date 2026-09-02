@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.114.0
+        version: 2.114.0
 
   apps/web:
     dependencies:

@@ -9,11 +9,51 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ROOT } from "./sources.ts";
 
-// This key authenticates against v1; v1beta returns 404 for :generateContent.
-const BASE = "https://generativelanguage.googleapis.com/v1";
+/*
+ * v1beta, not v1: structured output is rejected on v1 with "JSON mode is not
+ * enabled for api version v1".
+ */
+const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-/** Stable flash model, verified present on this key. */
-export const TEXT_MODEL = "gemini-3.7-flash";
+/*
+ * Measured across the models this key can reach, one identical request each:
+ *
+ *   gemini-2.5-flash   v1beta json    2.7s
+ *   gemini-3.5-flash   v1beta json   32.6s
+ *   gemini-3.7-flash   any    any    429, quota exhausted
+ *
+ * The newer models are either rate limited to nothing on this key or an order
+ * of magnitude slower for no benefit — writing five gym instructions does not
+ * need a reasoning model. Earlier empty-bodied 404s from 3.7-flash were quota
+ * exhaustion presenting as something else.
+ */
+export const TEXT_MODEL = "gemini-2.5-flash";
+
+/**
+ * Fallback order for text generation.
+ *
+ * The free tier caps `GenerateRequestsPerDayPerProjectPerModel` at 20 — twenty
+ * requests per day, counted separately for each model. Exhausting one model
+ * therefore does not exhaust the key, and rotating on 429 turns a hard stop
+ * into a longer runway. Order is fastest first.
+ *
+ * Enabling billing removes the cap entirely and would cost cents for this
+ * corpus; the rotation exists so the free tier is enough.
+ */
+const TEXT_MODELS = [
+	"gemini-2.5-flash",
+	"gemini-2.5-flash-lite",
+	"gemini-3.5-flash-lite",
+	"gemini-3.5-flash",
+	"gemini-flash-latest",
+];
+
+/** Models known to have hit their daily cap during this run. */
+const exhausted = new Set<string>();
+
+export function remainingModels(): string[] {
+	return TEXT_MODELS.filter((model) => !exhausted.has(model));
+}
 export const EMBED_MODEL = "gemini-embedding-001";
 
 /**
@@ -102,7 +142,7 @@ export async function generateJson<T>(
 	schema: Record<string, unknown>,
 	systemInstruction?: string,
 ): Promise<T> {
-	const response = await post<GenerateResponse>(`models/${TEXT_MODEL}:generateContent`, {
+	const body = {
 		contents: [{ role: "user", parts: [{ text: prompt }] }],
 		...(systemInstruction
 			? { systemInstruction: { parts: [{ text: systemInstruction }] } }
@@ -111,12 +151,49 @@ export async function generateJson<T>(
 			responseMimeType: "application/json",
 			responseSchema: schema,
 			temperature: 0.2,
+			// A batch of a dozen exercises in two languages runs long; the default
+			// ceiling would truncate the JSON and fail the parse.
+			maxOutputTokens: 32768,
 		},
-	});
+	};
 
-	const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-	if (!text) throw new Error("model returned no content");
-	return JSON.parse(text) as T;
+	let lastError: unknown = new Error("every model has hit its daily cap");
+
+	for (const model of remainingModels()) {
+		try {
+			const response = await post<GenerateResponse>(
+				`models/${model}:generateContent`,
+				body,
+				// One attempt per model: a daily cap does not clear on a retry, so
+				// moving on is faster than backing off.
+				{ retries: 2 },
+			);
+
+			const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+			if (!text) throw new Error(`${model} returned no content`);
+			return JSON.parse(text) as T;
+		} catch (error) {
+			lastError = error;
+			const message = String((error as Error).message);
+
+			// Two reasons to give up on a model and try the next one rather than
+			// failing the whole batch:
+			//   429  the daily cap, which will not clear by retrying
+			//   404  the model is not available to this account at all — for
+			//        example gemini-2.5-flash-lite, which the API reports as "no
+			//        longer available to new users"
+			// Anything else is a real problem with the request and should surface.
+			if (message.includes("429") || message.includes("404")) {
+				exhausted.add(model);
+				const reason = message.includes("429") ? "hit its daily cap" : "is unavailable";
+				process.stderr.write(`    ${model} ${reason}, moving on\n`);
+				continue;
+			}
+			throw error;
+		}
+	}
+
+	throw lastError;
 }
 
 type EmbedResponse = {

@@ -41,14 +41,28 @@ type StepsResult = {
 	steps_es: string[];
 };
 
+/**
+ * Several exercises per request.
+ *
+ * One call per exercise put the whole run at ten hours, almost all of it round
+ * trip rather than generation. Batching amortises that over eight exercises and
+ * `slug` keeps the results attributable, since a positional array would silently
+ * misalign if the model dropped an entry.
+ */
+const BATCH_SIZE = 12;
+
 const STEPS_SCHEMA = {
-	type: "object",
-	properties: {
-		name_es: { type: "string" },
-		steps_en: { type: "array", items: { type: "string" } },
-		steps_es: { type: "array", items: { type: "string" } },
+	type: "array",
+	items: {
+		type: "object",
+		properties: {
+			slug: { type: "string" },
+			name_es: { type: "string" },
+			steps_en: { type: "array", items: { type: "string" } },
+			steps_es: { type: "array", items: { type: "string" } },
+		},
+		required: ["slug", "name_es", "steps_en", "steps_es"],
 	},
-	required: ["name_es", "steps_en", "steps_es"],
 };
 
 const SYSTEM = `You write exercise instructions for a gym logging app.
@@ -65,50 +79,57 @@ Rules:
   Keep widely used English terms when translating them would be less clear
   (for example "press banca", "peso muerto", "hip thrust").`;
 
-function promptFor(exercise: Exercise): string {
-	const facts = [
-		`Name: ${exercise.name}`,
-		`Equipment: ${exercise.equipment}`,
-		`Primary muscle: ${exercise.primaryMuscle}`,
-		exercise.secondaryMuscles.length > 0
-			? `Secondary muscles: ${exercise.secondaryMuscles.join(", ")}`
-			: null,
-		`Logging type: ${exercise.exerciseType}`,
-		exercise.mechanic ? `Mechanic: ${exercise.mechanic}` : null,
-	]
-		.filter(Boolean)
-		.join("\n");
-
-	// Where verified instructions exist, they are the source of truth and only
-	// the translation is asked for. Regenerating them would replace a known-good
-	// description with a plausible one.
-	if (exercise.steps.length > 0) {
-		return `${facts}
-
-These English steps are verified and must be reproduced verbatim in steps_en:
-${exercise.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}
-
-Translate them into steps_es and give name_es.`;
-	}
-
-	return `${facts}
-
-Write steps_en for this exercise, then translate them into steps_es, and give name_es.`;
+function describe(exercise: Exercise): Record<string, unknown> {
+	return {
+		slug: exercise.slug,
+		name: exercise.name,
+		equipment: exercise.equipment,
+		primary_muscle: exercise.primaryMuscle,
+		...(exercise.secondaryMuscles.length > 0
+			? { secondary_muscles: exercise.secondaryMuscles }
+			: {}),
+		logging_type: exercise.exerciseType,
+		...(exercise.mechanic ? { mechanic: exercise.mechanic } : {}),
+		// Where verified instructions exist they are the source of truth and only
+		// the translation is asked for. Regenerating them would replace a
+		// known-good description with a merely plausible one.
+		...(exercise.steps.length > 0 ? { verified_steps_en: exercise.steps } : {}),
+	};
 }
 
-async function stepsFor(exercise: Exercise): Promise<StepsResult> {
-	const cached = path.join(STEPS_CACHE, `${exercise.slug}.json`);
-	if (existsSync(cached)) return JSON.parse(readFileSync(cached, "utf8"));
+function promptFor(batch: Exercise[]): string {
+	return `Produce one object per exercise below, in the same order, echoing its slug.
 
-	const result = await generateJson<StepsResult>(promptFor(exercise), STEPS_SCHEMA, SYSTEM);
+For any exercise carrying "verified_steps_en", copy those verbatim into steps_en
+and only translate them. For the rest, write steps_en yourself.
 
-	if (result.steps_en.length === 0 || result.steps_es.length === 0 || !result.name_es) {
-		throw new Error(`incomplete result for ${exercise.slug}`);
-	}
+${JSON.stringify(batch.map(describe), null, 1)}`;
+}
 
+async function runBatch(batch: Exercise[]): Promise<void> {
+	const results = await generateJson<(StepsResult & { slug: string })[]>(
+		promptFor(batch),
+		STEPS_SCHEMA,
+		SYSTEM,
+	);
+
+	const bySlug = new Map(results.map((result) => [result.slug, result]));
 	mkdirSync(STEPS_CACHE, { recursive: true });
-	writeFileSync(cached, JSON.stringify(result, null, 1));
-	return result;
+
+	for (const exercise of batch) {
+		const result = bySlug.get(exercise.slug);
+		if (!result || result.steps_en.length === 0 || result.steps_es.length === 0) {
+			throw new Error(`missing or incomplete result for ${exercise.slug}`);
+		}
+		writeFileSync(
+			path.join(STEPS_CACHE, `${exercise.slug}.json`),
+			JSON.stringify(
+				{ name_es: result.name_es, steps_en: result.steps_en, steps_es: result.steps_es },
+				null,
+				1,
+			),
+		);
+	}
 }
 
 async function runSteps() {
@@ -117,30 +138,32 @@ async function runSteps() {
 		(e) => !existsSync(path.join(STEPS_CACHE, `${e.slug}.json`)),
 	);
 
-	log(`→ steps: ${catalog.exercises.length} exercises, ${pending.length} still to fetch`);
+	const batches: Exercise[][] = [];
+	for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+		batches.push(pending.slice(i, i + BATCH_SIZE));
+	}
+
+	log(
+		`→ steps: ${catalog.exercises.length} exercises, ${pending.length} to fetch ` +
+			`in  batches of `,
+	);
 
 	let done = 0;
-	let failed = 0;
 	const failures: string[] = [];
 
-	// Four at a time: the endpoint is slow and rate-limits under load, and a
-	// higher number produced more retries than throughput.
-	await mapWithConcurrency(catalog.exercises, 4, async (exercise) => {
+	await mapWithConcurrency(batches, 2, async (batch) => {
 		try {
-			await stepsFor(exercise);
+			await runBatch(batch);
 		} catch (error) {
-			failed++;
-			failures.push(exercise.slug);
-			log(`  ! ${exercise.slug}: ${(error as Error).message.slice(0, 120)}`);
+			failures.push(...batch.map((e) => e.slug));
+			log(`  ! batch ${batch[0].slug}…: ${(error as Error).message.slice(0, 120)}`);
 		}
 		done++;
-		if (done % 20 === 0) log(`  ${done}/${catalog.exercises.length}`);
+		log(`  ${done}/${batches.length} batches`);
 	});
 
-	log(`  fetched ${done - failed}, failed ${failed}`);
-	if (failures.length > 0) {
-		log(`  re-run to retry: ${failures.slice(0, 10).join(", ")}${failures.length > 10 ? "…" : ""}`);
-	}
+	log(`  done: ${pending.length - failures.length} written, ${failures.length} failed`);
+	if (failures.length > 0) log("  re-run to retry the failures; completed work is cached");
 
 	writeCatalogs(catalog);
 }

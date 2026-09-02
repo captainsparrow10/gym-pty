@@ -4,9 +4,9 @@ import {
 	MUSCLES,
 	normalizeSearch,
 } from "@gym/shared/catalog";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, X } from "lucide-react";
+import { ChevronRight, Search, X } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -240,7 +240,11 @@ function ExerciseRow({
 	meta: { equipment: string; primaryMuscle: string };
 }) {
 	return (
-		<div className="flex h-20 items-center gap-3 rounded-xl border bg-card px-3">
+		<Link
+			to="/catalog/$slug"
+			params={{ slug }}
+			className="flex h-20 items-center gap-3 rounded-xl border bg-card px-3 transition-colors hover:border-primary"
+		>
 			<ExerciseArt
 				slug={slug}
 				name={name}
@@ -252,6 +256,10 @@ function ExerciseRow({
 					{meta.primaryMuscle} · {meta.equipment}
 				</p>
 			</div>
-		</div>
+			<ChevronRight
+				className="size-4 shrink-0 text-muted-foreground"
+				aria-hidden
+			/>
+		</Link>
 	);
 }
