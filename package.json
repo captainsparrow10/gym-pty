@@ -1,0 +1,15 @@
+{
+  "name": "gym",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @gym/web dev",
+    "build": "pnpm --filter @gym/web build",
+    "build:catalog": "node scripts/build-catalog.ts",
+    "check:contrast": "node scripts/check-contrast.ts"
+  }
+}

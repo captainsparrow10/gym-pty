@@ -1,0 +1,9 @@
+{
+  "name": "@gym/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./catalog": "./src/catalog/index.ts"
+  }
+}

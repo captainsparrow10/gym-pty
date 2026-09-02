@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens.
+ *
+ * Dark is the primary theme: this is used in a gym, often in low light, and a
+ * bright screen between sets is unpleasant. Light is a complete, independently
+ * checked palette rather than an inversion.
+ *
+ * `--accent` stays a neutral hover surface, as shadcn expects. Success (a new
+ * PR, a completed set) gets its own `--success` token so hover states don't
+ * turn green.
+ *
+ * Every foreground/background pair below is verified at >= 4.5:1 by
+ * `scripts/check-contrast.ts`.
+ */
+
+:root {
+	--radius: 0.75rem;
+
+	--background: #fafaf9;
+	--foreground: #1c1917;
+
+	--card: #ffffff;
+	--card-foreground: #1c1917;
+	--popover: #ffffff;
+	--popover-foreground: #1c1917;
+
+	/* Darker than the dark-theme orange: #f97316 on white is only 2.5:1. */
+	--primary: #c2410c;
+	--primary-foreground: #ffffff;
+
+	--secondary: #f0efed;
+	--secondary-foreground: #292524;
+
+	--muted: #f0efed;
+	--muted-foreground: #57534e;
+
+	--accent: #f0efed;
+	--accent-foreground: #292524;
+
+	--success: #15803d;
+	--success-foreground: #ffffff;
+
+	--destructive: #b91c1c;
+	--destructive-foreground: #ffffff;
+
+	--border: #e0ddd9;
+	--input: #8f8a83;
+	--ring: #c2410c;
+}
+
+.dark {
+	--background: #0c0b0a;
+	--foreground: #f5f3f0;
+
+	--card: #161412;
+	--card-foreground: #f5f3f0;
+	--popover: #161412;
+	--popover-foreground: #f5f3f0;
+
+	--primary: #f97316;
+	--primary-foreground: #1a0e03;
+
+	--secondary: #201d1a;
+	--secondary-foreground: #f5f3f0;
+
+	--muted: #201d1a;
+	--muted-foreground: #a8a29a;
+
+	--accent: #262220;
+	--accent-foreground: #f5f3f0;
+
+	--success: #22c55e;
+	--success-foreground: #04220e;
+
+	--destructive: #f87171;
+	--destructive-foreground: #1a0505;
+
+	--border: #2a2622;
+	--input: #6b645a;
+	--ring: #f97316;
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	--font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+	--font-display: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	/* The app is designed at phone width and stays that width on desktop. */
+	--spacing-frame: 30rem;
+}
+
+@layer base {
+	*,
+	::after,
+	::before {
+		border-color: var(--color-border);
+	}
+
+	html {
+		/* Removes the 300ms tap delay without disabling pinch-zoom. */
+		touch-action: manipulation;
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		background-color: var(--color-background);
+		color: var(--color-foreground);
+		font-family: var(--font-sans);
+		margin: 0;
+		/* dvh, not vh: 100vh is broken under Safari's collapsing toolbar. */
+		min-height: 100dvh;
+		overscroll-behavior-y: none;
+	}
+
+	/*
+	 * Weights, reps and the rest timer change constantly. Proportional digits
+	 * make the layout jitter on every tick, so all numerals are tabular.
+	 */
+	body {
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* 16px minimum, or iOS Safari zooms the viewport when a field is focused. */
+	input,
+	select,
+	textarea {
+		font-size: max(1rem, 16px);
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-ring);
+		outline-offset: 2px;
+	}
+}
+
+@layer utilities {
+	.font-display {
+		font-family: var(--font-display);
+	}
+}
+
+/*
+ * The exercise art animates three frames on a loop. Motion that repeats
+ * indefinitely is exactly what this setting exists to stop.
+ */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	::before,
+	::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
