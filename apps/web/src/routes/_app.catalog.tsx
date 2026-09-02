@@ -1,9 +1,4 @@
-import {
-	EQUIPMENT,
-	exercises,
-	MUSCLES,
-	normalizeSearch,
-} from "@gym/shared/catalog";
+import { exercises, normalizeSearch } from "@gym/shared/catalog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronRight, Search, X } from "lucide-react";
@@ -13,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppHeader } from "@/core/ui/app-frame";
 import { ExerciseArt } from "@/features/catalog/exercise-art";
-import { cn } from "@/lib/utils";
+import {
+	ActiveFilters,
+	activeFilterCount,
+	FilterSheet,
+	type Filters,
+	toggleValue,
+} from "@/features/catalog/filter-sheet";
 
 /**
  * Filters live in the URL, not in component state, so a filtered view can be
@@ -27,18 +28,8 @@ const searchSchema = z.object({
 	q: z.string().optional(),
 	equipment: z.array(z.string()).optional(),
 	muscle: z.array(z.string()).optional(),
+	type: z.array(z.string()).optional(),
 });
-
-/** Adds or removes one value from a filter list, dropping it when empty. */
-function toggle(
-	list: string[] | undefined,
-	value: string,
-): string[] | undefined {
-	const next = list?.includes(value)
-		? list.filter((item) => item !== value)
-		: [...(list ?? []), value];
-	return next.length > 0 ? next : undefined;
-}
 
 export const Route = createFileRoute("/_app/catalog")({
 	validateSearch: searchSchema,
@@ -87,7 +78,7 @@ function useLaneCount() {
 }
 
 function CatalogPage() {
-	const { q = "", equipment, muscle } = Route.useSearch();
+	const { q = "", equipment, muscle, type } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -99,12 +90,13 @@ function CatalogPage() {
 				return false;
 			if (muscle?.length && !muscle.includes(exercise.primaryMuscle))
 				return false;
+			if (type?.length && !type.includes(exercise.exerciseType)) return false;
 			if (tokens.length === 0) return true;
 
 			const haystack = HAYSTACK.get(exercise.slug) ?? "";
 			return tokens.every((token) => haystack.includes(token));
 		});
-	}, [q, equipment, muscle]);
+	}, [q, equipment, muscle, type]);
 
 	// 302 rows is well past the point where mounting them all costs a visible
 	// scroll stutter on a phone.
@@ -125,44 +117,44 @@ function CatalogPage() {
 	const setFilter = (patch: Record<string, string | string[] | undefined>) =>
 		navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
 
-	const hasFilters = Boolean(q || equipment?.length || muscle?.length);
+	const filters: Filters = { muscle, equipment, type };
+	const toggleFilter = (group: keyof Filters, value: string) =>
+		setFilter({ [group]: toggleValue(filters[group], value) });
+
+	const hasFilters = Boolean(q) || activeFilterCount(filters) > 0;
 
 	return (
 		<>
 			<AppHeader title="Ejercicios" />
 
 			<div className="space-y-3 border-b px-4 py-3 lg:px-8">
-				<div className="relative">
-					<Search
-						className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-						aria-hidden
-					/>
-					<Input
-						type="search"
-						value={q}
-						onChange={(event) =>
-							setFilter({ q: event.target.value || undefined })
-						}
-						placeholder="Buscar ejercicio…"
-						aria-label="Buscar ejercicio"
-						className="h-11 pl-9"
+				<div className="flex gap-2">
+					<div className="relative flex-1">
+						<Search
+							className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+							aria-hidden
+						/>
+						<Input
+							type="search"
+							value={q}
+							onChange={(event) =>
+								setFilter({ q: event.target.value || undefined })
+							}
+							placeholder="Buscar ejercicio…"
+							aria-label="Buscar ejercicio"
+							className="h-11 pl-9"
+						/>
+					</div>
+
+					<FilterSheet
+						filters={filters}
+						onToggle={toggleFilter}
+						onClear={() => navigate({ search: (prev) => ({ q: prev.q }) })}
+						resultCount={results.length}
 					/>
 				</div>
 
-				<FilterRow
-					label="Músculo"
-					options={MUSCLES}
-					selected={muscle}
-					onToggle={(value) => setFilter({ muscle: toggle(muscle, value) })}
-				/>
-				<FilterRow
-					label="Equipo"
-					options={EQUIPMENT}
-					selected={equipment}
-					onToggle={(value) =>
-						setFilter({ equipment: toggle(equipment, value) })
-					}
-				/>
+				<ActiveFilters filters={filters} onToggle={toggleFilter} />
 
 				<div className="flex items-center justify-between">
 					<p className="text-sm text-muted-foreground">
@@ -176,7 +168,7 @@ function CatalogPage() {
 							className="h-8"
 						>
 							<X className="size-3.5" aria-hidden />
-							Limpiar
+							Limpiar todo
 						</Button>
 					)}
 				</div>
@@ -218,47 +210,6 @@ function CatalogPage() {
 				)}
 			</div>
 		</>
-	);
-}
-
-function FilterRow({
-	label,
-	options,
-	selected,
-	onToggle,
-}: {
-	label: string;
-	options: string[];
-	selected?: string[];
-	onToggle: (value: string) => void;
-}) {
-	return (
-		<div>
-			<span className="sr-only">{label}</span>
-			{/* Horizontal chip strip: the alternative, a native multi-select with 20
-			    options, costs two taps and hides the current choice. */}
-			<div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-				{options.map((option) => {
-					const active = selected?.includes(option) ?? false;
-					return (
-						<button
-							key={option}
-							type="button"
-							aria-pressed={active}
-							onClick={() => onToggle(option)}
-							className={cn(
-								"shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors",
-								active
-									? "border-primary bg-primary text-primary-foreground"
-									: "bg-card text-muted-foreground hover:text-foreground",
-							)}
-						>
-							{option}
-						</button>
-					);
-				})}
-			</div>
-		</div>
 	);
 }
 

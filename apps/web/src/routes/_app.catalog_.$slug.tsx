@@ -1,13 +1,20 @@
 import { exercises } from "@gym/shared/catalog";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	notFound,
+	useNavigate,
+} from "@tanstack/react-router";
 import { ArrowLeft, Info, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AppScroll } from "@/core/ui/app-frame";
 import { ExerciseArt } from "@/features/catalog/exercise-art";
+import { useAddToSession } from "@/features/session/queries";
 
 const bySlug = new Map(exercises.map((exercise) => [exercise.slug, exercise]));
 
-export const Route = createFileRoute("/_app/catalog/$slug")({
+export const Route = createFileRoute("/_app/catalog_/$slug")({
 	loader: ({ params }) => {
 		const exercise = bySlug.get(params.slug);
 		if (!exercise) throw notFound();
@@ -34,6 +41,24 @@ const TYPE_LABEL: Record<string, string> = {
 
 function ExerciseDetail() {
 	const exercise = Route.useLoaderData();
+	const navigate = useNavigate();
+	const addToSession = useAddToSession();
+
+	const add = () =>
+		addToSession.mutate(exercise.slug, {
+			onSuccess: (result) => {
+				toast.success(
+					result.added
+						? `${exercise.name} agregado a la sesión`
+						: `${exercise.name} ya estaba en la sesión`,
+				);
+				navigate({ to: "/session" });
+			},
+			onError: (error) =>
+				toast.error("No se pudo agregar", {
+					description: (error as Error).message,
+				}),
+		});
 
 	return (
 		<>
@@ -115,9 +140,17 @@ function ExerciseDetail() {
 					)}
 				</Section>
 
-				<Button className="h-12 w-full" disabled>
+				{/*
+				 * Opens a session if none is running, so this is one tap from the
+				 * catalogue to logging rather than a trip through another screen.
+				 */}
+				<Button
+					className="h-12 w-full"
+					onClick={add}
+					disabled={addToSession.isPending}
+				>
 					<Plus className="size-4" aria-hidden />
-					Agregar a la sesión
+					{addToSession.isPending ? "Agregando…" : "Agregar a la sesión"}
 				</Button>
 			</AppScroll>
 		</>

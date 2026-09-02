@@ -17,7 +17,7 @@ import { Route as AppCoachRouteImport } from './routes/_app.coach'
 import { Route as AppProgressRouteImport } from './routes/_app.progress'
 import { Route as AppSessionRouteImport } from './routes/_app.session'
 import { Route as AppTrainRouteImport } from './routes/_app.train'
-import { Route as AppCatalogSlugRouteImport } from './routes/_app.catalog.$slug'
+import { Route as AppCatalogSlugRouteImport } from './routes/_app.catalog_.$slug'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -59,15 +59,15 @@ const AppTrainRoute = AppTrainRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppCatalogSlugRoute = AppCatalogSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => AppCatalogRoute,
+  id: '/catalog_/$slug',
+  path: '/catalog/$slug',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
-  '/catalog': typeof AppCatalogRouteWithChildren
+  '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
   '/session': typeof AppSessionRoute
@@ -76,7 +76,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/catalog': typeof AppCatalogRouteWithChildren
+  '/catalog': typeof AppCatalogRoute
   '/coach': typeof AppCoachRoute
   '/progress': typeof AppProgressRoute
   '/session': typeof AppSessionRoute
@@ -88,13 +88,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/_app/catalog': typeof AppCatalogRouteWithChildren
+  '/_app/catalog': typeof AppCatalogRoute
   '/_app/coach': typeof AppCoachRoute
   '/_app/progress': typeof AppProgressRoute
   '/_app/session': typeof AppSessionRoute
   '/_app/train': typeof AppTrainRoute
   '/_app/': typeof AppIndexRoute
-  '/_app/catalog/$slug': typeof AppCatalogSlugRoute
+  '/_app/catalog_/$slug': typeof AppCatalogSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,7 +127,7 @@ export interface FileRouteTypes {
     | '/_app/session'
     | '/_app/train'
     | '/_app/'
-    | '/_app/catalog/$slug'
+    | '/_app/catalog_/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -193,44 +193,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTrainRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/catalog/$slug': {
-      id: '/_app/catalog/$slug'
-      path: '/$slug'
+    '/_app/catalog_/$slug': {
+      id: '/_app/catalog_/$slug'
+      path: '/catalog/$slug'
       fullPath: '/catalog/$slug'
       preLoaderRoute: typeof AppCatalogSlugRouteImport
-      parentRoute: typeof AppCatalogRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppCatalogRouteChildren {
-  AppCatalogSlugRoute: typeof AppCatalogSlugRoute
-}
-
-const AppCatalogRouteChildren: AppCatalogRouteChildren = {
-  AppCatalogSlugRoute: AppCatalogSlugRoute,
-}
-
-const AppCatalogRouteWithChildren = AppCatalogRoute._addFileChildren(
-  AppCatalogRouteChildren,
-)
-
 interface AppRouteChildren {
-  AppCatalogRoute: typeof AppCatalogRouteWithChildren
+  AppCatalogRoute: typeof AppCatalogRoute
   AppCoachRoute: typeof AppCoachRoute
   AppProgressRoute: typeof AppProgressRoute
   AppSessionRoute: typeof AppSessionRoute
   AppTrainRoute: typeof AppTrainRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCatalogSlugRoute: typeof AppCatalogSlugRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppCatalogRoute: AppCatalogRouteWithChildren,
+  AppCatalogRoute: AppCatalogRoute,
   AppCoachRoute: AppCoachRoute,
   AppProgressRoute: AppProgressRoute,
   AppSessionRoute: AppSessionRoute,
   AppTrainRoute: AppTrainRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCatalogSlugRoute: AppCatalogSlugRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

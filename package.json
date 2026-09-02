@@ -13,7 +13,8 @@
     "check:contrast": "node scripts/check-contrast.ts",
     "build:catalog:ai": "node scripts/build-catalog-ai.ts",
     "smoke:session": "node scripts/smoke-session.ts",
-    "smoke:routines": "node scripts/smoke-routines.ts"
+    "smoke:routines": "node scripts/smoke-routines.ts",
+    "smoke:add": "node scripts/smoke-add-to-session.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.114.0"

@@ -260,3 +260,73 @@ export function useLastPerformance(slug: string | null) {
 		},
 	});
 }
+
+/**
+ * Adds an exercise to the session, opening one if none is running.
+ *
+ * Written as a single mutation so the entry point from the catalogue is one
+ * tap. Starting a session and then adding to it as two separate steps would
+ * leave an empty session behind whenever the second half failed, and an empty
+ * session blocks the next attempt through the one-open-session index.
+ */
+export function useAddToSession() {
+	const refresh = useRefresh();
+
+	return useMutation({
+		mutationFn: async (slug: string) => {
+			const { data: existing, error: readError } = await supabase
+				.from("sessions")
+				.select("id, logged_exercises(exercise_slug, position)")
+				.is("finished_at", null)
+				.maybeSingle();
+			if (readError) throw readError;
+
+			let sessionId = existing?.id;
+			let position = 0;
+
+			if (existing) {
+				const already = (existing.logged_exercises ?? []).some(
+					(exercise) => exercise.exercise_slug === slug,
+				);
+				// Already there: nothing to do, and adding a duplicate row would only
+				// split the sets for one movement across two cards.
+				if (already) return { sessionId: existing.id, added: false };
+
+				position =
+					Math.max(
+						-1,
+						...(existing.logged_exercises ?? []).map((e) => e.position),
+					) + 1;
+			} else {
+				const { data: auth } = await supabase.auth.getUser();
+				if (!auth.user) throw new Error("No hay sesión iniciada.");
+
+				const { data: created, error: createError } = await supabase
+					.from("sessions")
+					.insert({ user_id: auth.user.id })
+					.select("id")
+					.single();
+				if (createError) throw createError;
+				sessionId = created.id;
+			}
+
+			const { error } = await supabase.from("logged_exercises").insert({
+				session_id: sessionId as string,
+				exercise_slug: slug,
+				position,
+			});
+
+			if (error) {
+				// Undo the session this call opened, rather than leaving an empty one
+				// that would block the next attempt.
+				if (!existing && sessionId) {
+					await supabase.from("sessions").delete().eq("id", sessionId);
+				}
+				throw error;
+			}
+
+			return { sessionId: sessionId as string, added: true };
+		},
+		onSuccess: refresh,
+	});
+}
