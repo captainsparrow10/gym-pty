@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AppScroll } from "@/core/ui/app-frame";
 import { ExerciseArt } from "@/features/catalog/exercise-art";
+import { VideoLink } from "@/features/catalog/video-link";
 import { useAddToSession } from "@/features/session/queries";
 
 const bySlug = new Map(exercises.map((exercise) => [exercise.slug, exercise]));
@@ -139,6 +140,18 @@ function ExerciseDetail() {
 						</p>
 					)}
 				</Section>
+
+				{/*
+				 * A still drawing shows one frozen instant of something that is a
+				 * movement. The link is the honest complement to it, and for the
+				 * exercises with no drawing at all it is the only demonstration
+				 * there is.
+				 */}
+				<VideoLink
+					name={exercise.name}
+					equipment={exercise.equipment}
+					className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border bg-card text-sm font-medium transition-colors hover:border-primary"
+				/>
 
 				{/*
 				 * Opens a session if none is running, so this is one tap from the
